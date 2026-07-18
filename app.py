@@ -4,9 +4,18 @@ import sqlite3
 # Ensure data folder exists
 os.makedirs("data", exist_ok=True)
 
-# Ensure database and tables exist
-if not os.path.exists("data/bakery.db"):
-    import database  # this runs your table-creation script
+# Always ensure tables exist (safe — uses CREATE TABLE IF NOT EXISTS)
+import database
+
+# Populate with demo data if sales table is empty
+conn_check = sqlite3.connect("data/bakery.db")
+cursor_check = conn_check.cursor()
+cursor_check.execute("SELECT COUNT(*) FROM sales")
+sales_count = cursor_check.fetchone()[0]
+conn_check.close()
+
+if sales_count == 0:
+    import generate_data  # placeholder — will confirm correct script name below
 
 import streamlit as st
 from dashboard import show_dashboard_page
