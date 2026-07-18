@@ -15,7 +15,7 @@ sales_count = cursor_check.fetchone()[0]
 conn_check.close()
 
 if sales_count == 0:
-    import generate_data  # placeholder — will confirm correct script name below
+    import demo_data  # placeholder — will confirm correct script name below
 
 import streamlit as st
 from dashboard import show_dashboard_page
