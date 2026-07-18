@@ -1,5 +1,14 @@
-import streamlit as st
+import os
+import sqlite3
 
+# Ensure data folder exists
+os.makedirs("data", exist_ok=True)
+
+# Ensure database and tables exist
+if not os.path.exists("data/bakery.db"):
+    import database  # this runs your table-creation script
+
+import streamlit as st
 from dashboard import show_dashboard_page
 from inventory import show_inventory_page
 from recipes import show_recipe_page
