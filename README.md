@@ -2,6 +2,11 @@
 
 An AI-powered inventory management and business analytics platform built for a bakery-style business, combining real-time inventory tracking, order management, and machine learning-based demand forecasting in a single interactive dashboard.
 
+🔗 **Live Demo:** [smart-inventory-system.streamlit.app](https://smart-inventory-system-ecm5houyjzh2vim7cbefyd.streamlit.app/)
+**Demo login:** `admin` / `admin`
+
+> Note: This deployment is currently populated with generated demo data (synthetic sales/orders over a 90-day period) for demonstration purposes. The system is designed to integrate real business data in production use.
+
 ## Overview
 
 This project goes beyond a typical CRUD app — it integrates a **Prophet time-series forecasting model** directly into a live business tool, so demand predictions update dynamically as new sales data comes in. It's designed to simulate a real small-business use case: tracking inventory, managing recipes/ingredients, processing orders, and forecasting what to stock next.
