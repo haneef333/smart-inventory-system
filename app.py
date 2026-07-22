@@ -40,15 +40,21 @@ if "logged_in" not in st.session_state:
 
 def login():
     st.title("🔐 Login")
+    st.info("👉 Demo credentials — Username: **admin**  Password: **admin**")
 
-    user = st.text_input("Username")
-    pwd = st.text_input("Password", type="password")
+    user = st.text_input("Username", value="admin")
+    pwd = st.text_input("Password", type="password", value="admin")
 
-    if st.button("Login"):
-        if user == "admin" and pwd == "admin":
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("Login"):
+            if user == "admin" and pwd == "admin":
+                st.session_state.logged_in = True
+            else:
+                st.error("Invalid credentials")
+    with col2:
+        if st.button("Continue as Guest"):
             st.session_state.logged_in = True
-        else:
-            st.error("Invalid credentials")
 
 if not st.session_state.logged_in:
     login()
