@@ -1,7 +1,15 @@
 import sqlite3
 import random
 from datetime import datetime, timedelta
+"""
+Demo Data Generator
 
+This script creates synthetic orders and sales records
+for demonstrating the application.
+
+It is NOT used for model training or evaluation.
+Real forecasting uses imported historical sales data.
+"""
 # Database connection
 conn = sqlite3.connect("data/bakery.db")
 
