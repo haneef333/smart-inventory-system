@@ -13,11 +13,12 @@ cursor = conn.cursor()
 cursor.execute("""
 CREATE TABLE IF NOT EXISTS inventory (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    item_name TEXT NOT NULL,
+    item_name TEXT NOT NULL UNIQUE,
     category TEXT,
     quantity REAL,
     unit TEXT,
-    cost_per_unit REAL
+    cost_per_unit REAL,
+    reorder_threshold REAL DEFAULT 10
 )
 """)
 
