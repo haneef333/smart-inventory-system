@@ -6,6 +6,7 @@ import pandas as pd
 conn = sqlite3.connect("data/bakery.db", check_same_thread=False)
 cursor = conn.cursor()
 
+
 def show_order_page():
 
     st.header("Order Processing")
@@ -52,10 +53,15 @@ def show_order_page():
         if submit_button:
 
             # Get recipe ingredients
-            ingredients_df = pd.read_sql_query(f"""
-            SELECT * FROM recipes
-            WHERE product_name = '{product_name}'
-            """, conn)
+            ingredients_df = pd.read_sql_query(
+                """
+                SELECT *
+                FROM recipes
+                WHERE product_name = ?
+                """,
+                conn,
+                params=(product_name,)
+            )
 
             total_cost = 0
 
@@ -73,10 +79,20 @@ def show_order_page():
                     row["quantity_needed"] * order_quantity
                 )
 
-                inventory_item = pd.read_sql_query(f"""
-                SELECT * FROM inventory
-                WHERE item_name = '{ingredient}'
-                """, conn)
+                inventory_item = pd.read_sql_query(
+                    """
+                    SELECT *
+                    FROM inventory
+                    WHERE item_name = ?
+                    """,
+                    conn,
+                    params=(ingredient,)
+                )
+
+                if inventory_item.empty:
+                    st.error(f"{ingredient} does not exist in inventory.")
+                    insufficient_stock = True
+                    continue
 
                 current_quantity = inventory_item.iloc[0]["quantity"]
 
@@ -104,10 +120,19 @@ def show_order_page():
                         row["quantity_needed"] * order_quantity
                     )
 
-                    inventory_item = pd.read_sql_query(f"""
-                    SELECT * FROM inventory
-                    WHERE item_name = '{ingredient}'
-                    """, conn)
+                    inventory_item = pd.read_sql_query(
+                        """
+                        SELECT *
+                        FROM inventory
+                        WHERE item_name = ?
+                        """,
+                        conn,
+                        params=(ingredient,)
+                    )
+
+                    if inventory_item.empty:
+                        st.error(f"{ingredient} does not exist in inventory.")
+                        continue
 
                     current_quantity = inventory_item.iloc[0]["quantity"]
 
@@ -119,14 +144,17 @@ def show_order_page():
                     )
 
                     # Update inventory
-                    cursor.execute("""
-                    UPDATE inventory
-                    SET quantity = ?
-                    WHERE item_name = ?
-                    """, (
-                        new_quantity,
-                        ingredient
-                    ))
+                    cursor.execute(
+                        """
+                        UPDATE inventory
+                        SET quantity = ?
+                        WHERE item_name = ?
+                        """,
+                        (
+                            new_quantity,
+                            ingredient
+                        )
+                    )
 
                     # Calculate ingredient cost
                     ingredient_cost = (
@@ -139,14 +167,17 @@ def show_order_page():
                     # SAVE INGREDIENT USAGE
                     # --------------------------------
 
-                    cursor.execute("""
-                    INSERT INTO ingredient_usage
-                    (ingredient_name, quantity_used)
-                    VALUES (?, ?)
-                    """, (
-                        ingredient,
-                        quantity_needed
-                    ))
+                    cursor.execute(
+                        """
+                        INSERT INTO ingredient_usage
+                        (ingredient_name, quantity_used)
+                        VALUES (?, ?)
+                        """,
+                        (
+                            ingredient,
+                            quantity_needed
+                        )
+                    )
 
                 # --------------------------------
                 # REVENUE & PROFIT
@@ -162,30 +193,36 @@ def show_order_page():
                 # SAVE ORDER
                 # --------------------------------
 
-                cursor.execute("""
-                INSERT INTO orders
-                (product_name, quantity, selling_price)
-                VALUES (?, ?, ?)
-                """, (
-                    product_name,
-                    order_quantity,
-                    selling_price
-                ))
+                cursor.execute(
+                    """
+                    INSERT INTO orders
+                    (product_name, quantity, selling_price)
+                    VALUES (?, ?, ?)
+                    """,
+                    (
+                        product_name,
+                        order_quantity,
+                        selling_price
+                    )
+                )
 
                 # --------------------------------
                 # SAVE SALES DATA
                 # --------------------------------
 
-                cursor.execute("""
-                INSERT INTO sales
-                (product_name, revenue, cost, profit)
-                VALUES (?, ?, ?, ?)
-                """, (
-                    product_name,
-                    revenue,
-                    total_cost,
-                    profit
-                ))
+                cursor.execute(
+                    """
+                    INSERT INTO sales
+                    (product_name, revenue, cost, profit)
+                    VALUES (?, ?, ?, ?)
+                    """,
+                    (
+                        product_name,
+                        revenue,
+                        total_cost,
+                        profit
+                    )
+                )
 
                 conn.commit()
 
