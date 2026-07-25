@@ -10,6 +10,7 @@ conn = sqlite3.connect(
 
 cursor = conn.cursor()
 
+
 def show_inventory_page():
 
     st.header("Inventory Management")
@@ -22,7 +23,7 @@ def show_inventory_page():
 
     with st.form("add_item_form"):
 
-        item_name = st.text_input("Item Name")
+        item_name = st.text_input("Item Name").strip()
 
         category = st.text_input("Category")
 
@@ -38,6 +39,13 @@ def show_inventory_page():
         cost_per_unit = st.number_input(
             "Cost Per Unit",
             min_value=0.0
+        )
+
+        reorder_threshold = st.number_input(
+            "Reorder Threshold",
+            min_value=0.0,
+            value=10.0,
+            help="Alert when stock falls below this quantity."
         )
 
         add_button = st.form_submit_button(
@@ -60,23 +68,33 @@ def show_inventory_page():
             if not existing_item.empty:
 
                 st.error(
-                    "Item already exists. "
-                    "Use Restock section instead."
+                    "Item already exists. Use Restock section instead."
                 )
 
             else:
 
-                cursor.execute("""
-                INSERT INTO inventory
-                (item_name, category, quantity, unit, cost_per_unit)
-                VALUES (?, ?, ?, ?, ?)
-                """, (
-                    item_name,
-                    category,
-                    quantity,
-                    unit,
-                    cost_per_unit
-                ))
+                cursor.execute(
+                    """
+                    INSERT INTO inventory
+                    (
+                        item_name,
+                        category,
+                        quantity,
+                        unit,
+                        cost_per_unit,
+                        reorder_threshold
+                    )
+                    VALUES (?, ?, ?, ?, ?, ?)
+                    """,
+                    (
+                        item_name,
+                        category,
+                        quantity,
+                        unit,
+                        cost_per_unit,
+                        reorder_threshold
+                    )
+                )
 
                 conn.commit()
 
@@ -117,7 +135,6 @@ def show_inventory_page():
 
             if restock_button:
 
-                # Secure item lookup
                 current_item = pd.read_sql_query(
                     """
                     SELECT *
@@ -128,28 +145,33 @@ def show_inventory_page():
                     params=(selected_item,)
                 )
 
-                current_quantity = (
-                    current_item.iloc[0]["quantity"]
-                )
+                if current_item.empty:
+                    st.error("Item not found.")
+                else:
 
-                new_quantity = (
-                    current_quantity + add_quantity
-                )
+                    current_quantity = current_item.iloc[0]["quantity"]
 
-                cursor.execute("""
-                UPDATE inventory
-                SET quantity = ?
-                WHERE item_name = ?
-                """, (
-                    new_quantity,
-                    selected_item
-                ))
+                    new_quantity = (
+                        current_quantity + add_quantity
+                    )
 
-                conn.commit()
+                    cursor.execute(
+                        """
+                        UPDATE inventory
+                        SET quantity = ?
+                        WHERE item_name = ?
+                        """,
+                        (
+                            new_quantity,
+                            selected_item
+                        )
+                    )
 
-                st.success(
-                    f"{selected_item} restocked successfully!"
-                )
+                    conn.commit()
+
+                    st.success(
+                        f"{selected_item} restocked successfully!"
+                    )
 
     # =========================================
     # VIEW INVENTORY
@@ -163,6 +185,31 @@ def show_inventory_page():
     )
 
     st.dataframe(df)
+
+    # =========================================
+    # LOW STOCK ALERTS
+    # =========================================
+
+    if not df.empty:
+
+        low_stock_df = df[
+            df["quantity"] <= df["reorder_threshold"]
+        ]
+
+        if not low_stock_df.empty:
+
+            st.warning("⚠️ Low Stock Items")
+
+            st.dataframe(
+                low_stock_df[
+                    [
+                        "item_name",
+                        "quantity",
+                        "reorder_threshold",
+                        "unit"
+                    ]
+                ]
+            )
 
     # =========================================
     # DELETE ITEM
