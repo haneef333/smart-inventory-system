@@ -46,11 +46,16 @@ def show_inventory_page():
 
         if add_button:
 
-            # Check duplicate item
-            existing_item = pd.read_sql_query(f"""
-            SELECT * FROM inventory
-            WHERE item_name = '{item_name}'
-            """, conn)
+            # Secure duplicate check
+            existing_item = pd.read_sql_query(
+                """
+                SELECT *
+                FROM inventory
+                WHERE item_name = ?
+                """,
+                conn,
+                params=(item_name,)
+            )
 
             if not existing_item.empty:
 
@@ -92,9 +97,7 @@ def show_inventory_page():
 
     if not inventory_df.empty:
 
-        item_list = inventory_df[
-            "item_name"
-        ].tolist()
+        item_list = inventory_df["item_name"].tolist()
 
         with st.form("restock_form"):
 
@@ -114,10 +117,16 @@ def show_inventory_page():
 
             if restock_button:
 
-                current_item = pd.read_sql_query(f"""
-                SELECT * FROM inventory
-                WHERE item_name = '{selected_item}'
-                """, conn)
+                # Secure item lookup
+                current_item = pd.read_sql_query(
+                    """
+                    SELECT *
+                    FROM inventory
+                    WHERE item_name = ?
+                    """,
+                    conn,
+                    params=(selected_item,)
+                )
 
                 current_quantity = (
                     current_item.iloc[0]["quantity"]
