@@ -3,6 +3,11 @@ import sqlite3
 import pandas as pd
 
 from prophet import Prophet
+import numpy as np
+from sklearn.metrics import (
+    mean_squared_error,
+    mean_absolute_percentage_error
+)
 
 # Database connection
 conn = sqlite3.connect(
@@ -95,11 +100,21 @@ def show_ml_forecast_page():
 
         forecast = model.predict(future)
 
-        forecast_test = forecast.tail(30)
+        # --------------------------------
+        # PREPARE TEST PREDICTIONS
+        # --------------------------------
+
+        forecast_test = forecast.tail(30).copy()
+
+        forecast_test = forecast_test[
+            ["ds", "yhat"]
+        ].reset_index(drop=True)
+
+        actual = test.reset_index(drop=True)
 
         prophet_prediction = forecast_test["yhat"].iloc[-1]
 
-        last_actual = test["y"].iloc[-1]
+        last_actual = actual["y"].iloc[-1]
 
         # --------------------------------
         # MOVING AVERAGE BASELINE
@@ -109,6 +124,43 @@ def show_ml_forecast_page():
             train["y"]
             .tail(7)
             .mean()
+        )
+
+        moving_average_predictions = np.repeat(
+            moving_average_prediction,
+            len(actual)
+        )
+
+        # --------------------------------
+        # MODEL EVALUATION
+        # --------------------------------
+
+        prophet_rmse = np.sqrt(
+            mean_squared_error(
+                actual["y"],
+                forecast_test["yhat"]
+            )
+        )
+
+        prophet_mape = (
+            mean_absolute_percentage_error(
+                actual["y"],
+                forecast_test["yhat"]
+            ) * 100
+        )
+
+        baseline_rmse = np.sqrt(
+            mean_squared_error(
+                actual["y"],
+                moving_average_predictions
+            )
+        )
+
+        baseline_mape = (
+            mean_absolute_percentage_error(
+                actual["y"],
+                moving_average_predictions
+            ) * 100
         )
 
         # --------------------------------
@@ -183,6 +235,41 @@ def show_ml_forecast_page():
         )
 
         # --------------------------------
+        # MODEL EVALUATION
+        # --------------------------------
+
+        st.subheader("Model Evaluation")
+
+        evaluation_df = pd.DataFrame({
+            "Model": [
+                "Moving Average",
+                "Prophet"
+            ],
+            "RMSE": [
+                round(baseline_rmse, 2),
+                round(prophet_rmse, 2)
+            ],
+            "MAPE (%)": [
+                round(baseline_mape, 2),
+                round(prophet_mape, 2)
+            ]
+        })
+
+        st.dataframe(
+            evaluation_df,
+            use_container_width=True
+        )
+
+        if prophet_rmse < baseline_rmse:
+            st.success(
+                "✅ Prophet performs better than the Moving Average baseline."
+            )
+        else:
+            st.info(
+                "ℹ️ Moving Average performs as well as or better than Prophet."
+            )
+
+        # --------------------------------
         # FORECAST PLOT
         # --------------------------------
 
@@ -207,7 +294,6 @@ def show_ml_forecast_page():
         # --------------------------------
 
         with st.expander("Training Data"):
-
             st.dataframe(train)
 
         # --------------------------------
@@ -215,7 +301,6 @@ def show_ml_forecast_page():
         # --------------------------------
 
         with st.expander("Testing Data"):
-
             st.dataframe(test)
 
     except Exception as e:
