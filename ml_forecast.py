@@ -18,8 +18,7 @@ conn = sqlite3.connect(
 
 def show_ml_forecast_page():
 
-    st.header("Advanced Demand Forecasting (Prophet Model)")
-
+    st.header("Advanced Demand Forecasting")
     # --------------------------------
     # LOAD REAL DAILY DEMAND DATA
     # --------------------------------
@@ -70,6 +69,28 @@ def show_ml_forecast_page():
     )[["ds", "y"]]
 
     daily = daily.sort_values("ds")
+    # --------------------------------
+    # FEATURE ENGINEERING
+    # --------------------------------
+
+    daily["day_of_week"] = daily["ds"].dt.dayofweek
+
+    daily["is_weekend"] = (
+        daily["day_of_week"] >= 5
+    ).astype(int)
+
+    daily["lag_1"] = daily["y"].shift(1)
+
+    daily["lag_7"] = daily["y"].shift(7)
+
+    daily["rolling_avg_7"] = (
+        daily["y"]
+        .rolling(window=7)
+        .mean()
+    )
+
+    # Remove rows with missing lag values
+    daily = daily.dropna().reset_index(drop=True)
 
     if len(daily) < 40:
         st.warning(
@@ -288,6 +309,18 @@ def show_ml_forecast_page():
         st.line_chart(
             daily.set_index("ds")["y"]
         )
+        # --------------------------------
+        # FEATURE ENGINEERED DATASET
+        # --------------------------------
+
+        st.subheader("Feature Engineered Dataset")
+
+        with st.expander("View Engineered Features"):
+
+            st.dataframe(
+                daily.tail(20),
+                use_container_width=True
+            )
 
         # --------------------------------
         # TRAINING DATA
