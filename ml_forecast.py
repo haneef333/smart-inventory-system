@@ -4,41 +4,73 @@ import pandas as pd
 
 from prophet import Prophet
 
-conn = sqlite3.connect("data/bakery.db", check_same_thread=False)
+# Database connection
+conn = sqlite3.connect(
+    "data/bakery.db",
+    check_same_thread=False
+)
+
 
 def show_ml_forecast_page():
 
     st.header("Advanced Demand Forecasting (Prophet Model)")
 
-    # Load data
-    sales_df = pd.read_sql_query("SELECT * FROM sales", conn)
+    # --------------------------------
+    # LOAD REAL DAILY DEMAND DATA
+    # --------------------------------
 
-    if sales_df.empty:
-        st.warning("No sales data available.")
+    daily_df = pd.read_sql_query(
+        "SELECT * FROM daily_product_demand_clean",
+        conn
+    )
+
+    if daily_df.empty:
+        st.warning("No demand data available.")
         return
 
-    # Convert date
-    sales_df["sale_date"] = pd.to_datetime(
-        sales_df["sale_date"],
+    # Convert Date column
+    daily_df["Date"] = pd.to_datetime(
+        daily_df["Date"],
         errors="coerce"
     )
 
-    sales_df = sales_df.dropna(subset=["sale_date"])
+    daily_df = daily_df.dropna(subset=["Date"])
 
-    # Product selection
-    products = sales_df["product_name"].unique()
-    selected_product = st.selectbox("Select Product", products)
+    # --------------------------------
+    # PRODUCT SELECTION
+    # --------------------------------
 
-    product_df = sales_df[
-        sales_df["product_name"] == selected_product
-    ]
+    products = sorted(
+        daily_df["Item"].unique()
+    )
 
-    # Prepare daily demand
-    daily = product_df.groupby("sale_date").size().reset_index()
-    daily.columns = ["ds", "y"]
+    selected_product = st.selectbox(
+        "Select Product",
+        products
+    )
+
+    # --------------------------------
+    # FILTER SELECTED PRODUCT
+    # --------------------------------
+
+    product_df = daily_df[
+        daily_df["Item"] == selected_product
+    ].copy()
+
+    # Prophet requires columns named ds and y
+    daily = product_df.rename(
+        columns={
+            "Date": "ds",
+            "quantity_sold": "y"
+        }
+    )[["ds", "y"]]
+
+    daily = daily.sort_values("ds")
 
     if len(daily) < 10:
-        st.warning("Need at least 10 days of data for Prophet forecasting.")
+        st.warning(
+            "Need at least 10 days of data for forecasting."
+        )
         return
 
     # --------------------------------
@@ -51,13 +83,14 @@ def show_ml_forecast_page():
 
         model.fit(daily)
 
-        future = model.make_future_dataframe(periods=1)
+        future = model.make_future_dataframe(
+            periods=1
+        )
 
         forecast = model.predict(future)
 
         predicted = forecast["yhat"].iloc[-1]
 
-        # Trend logic
         last_actual = daily["y"].iloc[-1]
 
         if predicted > last_actual:
@@ -65,28 +98,52 @@ def show_ml_forecast_page():
         else:
             trend = "Decreasing 📉"
 
-        # Output
+        # --------------------------------
+        # RESULTS
+        # --------------------------------
+
         st.subheader("Forecast Result")
 
         st.success(
             f"""
-            Product: {selected_product}  
-            Predicted Demand (Tomorrow): {round(predicted, 2)} orders  
+            Product: {selected_product}
+
+            Predicted Demand (Tomorrow): {round(predicted, 2)}
+
             Trend: {trend}
             """
         )
 
-        # Show forecast plot
+        # --------------------------------
+        # FORECAST PLOT
+        # --------------------------------
+
         st.subheader("Forecast Visualization")
 
         fig = model.plot(forecast)
 
         st.pyplot(fig)
 
-        # Show data
-        st.subheader("Historical Data")
+        # --------------------------------
+        # HISTORICAL DATA
+        # --------------------------------
 
-        st.line_chart(daily.set_index("ds")["y"])
+        st.subheader("Historical Demand")
+
+        st.line_chart(
+            daily.set_index("ds")["y"]
+        )
+
+        # --------------------------------
+        # SHOW RAW DATA
+        # --------------------------------
+
+        with st.expander("View Demand Data"):
+
+            st.dataframe(daily)
 
     except Exception as e:
-        st.error(f"Prophet model failed: {str(e)}")
+
+        st.error(
+            f"Prophet model failed: {str(e)}"
+        )
