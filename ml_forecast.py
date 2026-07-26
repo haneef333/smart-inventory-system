@@ -1,8 +1,9 @@
 import streamlit as st
 import sqlite3
 import pandas as pd
-
+import matplotlib.pyplot as plt
 from prophet import Prophet
+from xgboost import XGBRegressor
 import numpy as np
 from sklearn.metrics import (
     mean_squared_error,
@@ -104,7 +105,23 @@ def show_ml_forecast_page():
 
     train = daily.iloc[:-30]
     test = daily.iloc[-30:]
+    # --------------------------------
+    # XGBOOST DATA
+    # --------------------------------
 
+    feature_columns = [
+        "day_of_week",
+        "is_weekend",
+        "lag_1",
+        "lag_7",
+        "rolling_avg_7"
+    ]
+
+    X_train = train[feature_columns]
+    y_train = train["y"]
+
+    X_test = test[feature_columns]
+    y_test = test["y"]
     # --------------------------------
     # TRAIN PROPHET
     # --------------------------------
@@ -114,6 +131,20 @@ def show_ml_forecast_page():
         model = Prophet()
 
         model.fit(train)
+        # --------------------------------
+        # XGBOOST MODEL
+        # --------------------------------
+
+        xgb_model = XGBRegressor(
+            n_estimators=100,
+            learning_rate=0.1,
+            max_depth=4,
+            random_state=42
+        )
+
+        xgb_model.fit(X_train, y_train)
+
+        xgb_predictions = xgb_model.predict(X_test)
 
         future = model.make_future_dataframe(
             periods=30
@@ -183,8 +214,27 @@ def show_ml_forecast_page():
                 moving_average_predictions
             ) * 100
         )
-
         # --------------------------------
+        # XGBOOST EVALUATION
+        # --------------------------------
+
+        xgb_prediction = xgb_predictions[-1]
+
+        xgb_rmse = np.sqrt(
+            mean_squared_error(
+                y_test,
+                xgb_predictions
+            )
+        )
+
+        xgb_mape = (
+            mean_absolute_percentage_error(
+                y_test,
+                xgb_predictions
+            ) * 100
+        )
+        
+                # --------------------------------
         # TREND
         # --------------------------------
 
@@ -206,6 +256,8 @@ def show_ml_forecast_page():
             Prophet Prediction: {prophet_prediction:.2f}
 
             Moving Average Prediction: {moving_average_prediction:.2f}
+
+            XGBoost Prediction: {xgb_prediction:.2f}
 
             Last Actual Demand: {last_actual}
 
@@ -242,11 +294,13 @@ def show_ml_forecast_page():
         comparison_df = pd.DataFrame({
             "Model": [
                 "Moving Average",
-                "Prophet"
+                "Prophet",
+                "XGBoost"
             ],
             "Prediction": [
                 round(moving_average_prediction, 2),
-                round(prophet_prediction, 2)
+                round(prophet_prediction, 2),
+                round(xgb_prediction, 2)
             ]
         })
 
@@ -264,15 +318,18 @@ def show_ml_forecast_page():
         evaluation_df = pd.DataFrame({
             "Model": [
                 "Moving Average",
-                "Prophet"
+                "Prophet",
+                "XGBoost"
             ],
             "RMSE": [
                 round(baseline_rmse, 2),
-                round(prophet_rmse, 2)
+                round(prophet_rmse, 2),
+                round(xgb_rmse, 2)
             ],
             "MAPE (%)": [
                 round(baseline_mape, 2),
-                round(prophet_mape, 2)
+                round(prophet_mape, 2),
+                round(xgb_mape, 2)
             ]
         })
 
@@ -281,14 +338,58 @@ def show_ml_forecast_page():
             use_container_width=True
         )
 
-        if prophet_rmse < baseline_rmse:
-            st.success(
-                "✅ Prophet performs better than the Moving Average baseline."
-            )
-        else:
-            st.info(
-                "ℹ️ Moving Average performs as well as or better than Prophet."
-            )
+        scores = {
+            "Moving Average": baseline_rmse,
+            "Prophet": prophet_rmse,
+            "XGBoost": xgb_rmse
+        }
+
+        best_model = min(scores, key=scores.get)
+
+        st.success(
+            f"""
+        🏆 Best Performing Model
+
+        **{best_model}**
+
+        RMSE: {scores[best_model]:.2f}
+        """
+        )
+        # --------------------------------
+        # FEATURE IMPORTANCE
+        # --------------------------------
+
+        st.subheader("XGBoost Feature Importance")
+
+        importance_df = pd.DataFrame({
+            "Feature": feature_columns,
+            "Importance": xgb_model.feature_importances_
+        })
+
+        importance_df = importance_df.sort_values(
+            by="Importance",
+            ascending=False
+        )
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+        ax.bar(
+            importance_df["Feature"],
+            importance_df["Importance"]
+        )
+
+        ax.set_xlabel("Features")
+        ax.set_ylabel("Importance")
+        ax.set_title("Feature Importance")
+
+        plt.xticks(rotation=45)
+
+        st.pyplot(fig)
+
+        st.dataframe(
+            importance_df,
+            use_container_width=True
+        )
 
         # --------------------------------
         # FORECAST PLOT
