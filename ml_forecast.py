@@ -68,7 +68,7 @@ def show_ml_forecast_page():
 
     if len(daily) < 40:
         st.warning(
-            "Need at least 40 days of data for train/test forecasting."
+            "Need at least 40 days of data for forecasting."
         )
         return
 
@@ -97,15 +97,25 @@ def show_ml_forecast_page():
 
         forecast_test = forecast.tail(30)
 
-        predicted = forecast_test["yhat"].iloc[-1]
+        prophet_prediction = forecast_test["yhat"].iloc[-1]
 
         last_actual = test["y"].iloc[-1]
+
+        # --------------------------------
+        # MOVING AVERAGE BASELINE
+        # --------------------------------
+
+        moving_average_prediction = (
+            train["y"]
+            .tail(7)
+            .mean()
+        )
 
         # --------------------------------
         # TREND
         # --------------------------------
 
-        if predicted > last_actual:
+        if prophet_prediction > last_actual:
             trend = "Increasing 📈"
         else:
             trend = "Decreasing 📉"
@@ -120,7 +130,9 @@ def show_ml_forecast_page():
             f"""
             Product: {selected_product}
 
-            Predicted Demand (30th Test Day): {predicted:.2f}
+            Prophet Prediction: {prophet_prediction:.2f}
+
+            Moving Average Prediction: {moving_average_prediction:.2f}
 
             Last Actual Demand: {last_actual}
 
@@ -129,7 +141,7 @@ def show_ml_forecast_page():
         )
 
         # --------------------------------
-        # DATASET INFORMATION
+        # TRAIN / TEST INFO
         # --------------------------------
 
         st.subheader("Train/Test Split")
@@ -149,6 +161,28 @@ def show_ml_forecast_page():
             )
 
         # --------------------------------
+        # MODEL COMPARISON
+        # --------------------------------
+
+        st.subheader("Model Comparison")
+
+        comparison_df = pd.DataFrame({
+            "Model": [
+                "Moving Average",
+                "Prophet"
+            ],
+            "Prediction": [
+                round(moving_average_prediction, 2),
+                round(prophet_prediction, 2)
+            ]
+        })
+
+        st.dataframe(
+            comparison_df,
+            use_container_width=True
+        )
+
+        # --------------------------------
         # FORECAST PLOT
         # --------------------------------
 
@@ -159,7 +193,7 @@ def show_ml_forecast_page():
         st.pyplot(fig)
 
         # --------------------------------
-        # HISTORICAL DATA
+        # HISTORICAL DEMAND
         # --------------------------------
 
         st.subheader("Historical Demand")
