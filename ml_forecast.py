@@ -28,7 +28,7 @@ def show_ml_forecast_page():
         st.warning("No demand data available.")
         return
 
-    # Convert Date column
+    # Convert date
     daily_df["Date"] = pd.to_datetime(
         daily_df["Date"],
         errors="coerce"
@@ -50,14 +50,13 @@ def show_ml_forecast_page():
     )
 
     # --------------------------------
-    # FILTER SELECTED PRODUCT
+    # FILTER PRODUCT
     # --------------------------------
 
     product_df = daily_df[
         daily_df["Item"] == selected_product
     ].copy()
 
-    # Prophet requires columns named ds and y
     daily = product_df.rename(
         columns={
             "Date": "ds",
@@ -67,31 +66,44 @@ def show_ml_forecast_page():
 
     daily = daily.sort_values("ds")
 
-    if len(daily) < 10:
+    if len(daily) < 40:
         st.warning(
-            "Need at least 10 days of data for forecasting."
+            "Need at least 40 days of data for train/test forecasting."
         )
         return
 
     # --------------------------------
-    # PROPHET MODEL
+    # TRAIN / TEST SPLIT
+    # --------------------------------
+
+    train = daily.iloc[:-30]
+    test = daily.iloc[-30:]
+
+    # --------------------------------
+    # TRAIN PROPHET
     # --------------------------------
 
     try:
 
         model = Prophet()
 
-        model.fit(daily)
+        model.fit(train)
 
         future = model.make_future_dataframe(
-            periods=1
+            periods=30
         )
 
         forecast = model.predict(future)
 
-        predicted = forecast["yhat"].iloc[-1]
+        forecast_test = forecast.tail(30)
 
-        last_actual = daily["y"].iloc[-1]
+        predicted = forecast_test["yhat"].iloc[-1]
+
+        last_actual = test["y"].iloc[-1]
+
+        # --------------------------------
+        # TREND
+        # --------------------------------
 
         if predicted > last_actual:
             trend = "Increasing 📈"
@@ -108,11 +120,33 @@ def show_ml_forecast_page():
             f"""
             Product: {selected_product}
 
-            Predicted Demand (Tomorrow): {round(predicted, 2)}
+            Predicted Demand (30th Test Day): {predicted:.2f}
+
+            Last Actual Demand: {last_actual}
 
             Trend: {trend}
             """
         )
+
+        # --------------------------------
+        # DATASET INFORMATION
+        # --------------------------------
+
+        st.subheader("Train/Test Split")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            st.metric(
+                "Training Days",
+                len(train)
+            )
+
+        with col2:
+            st.metric(
+                "Testing Days",
+                len(test)
+            )
 
         # --------------------------------
         # FORECAST PLOT
@@ -135,12 +169,20 @@ def show_ml_forecast_page():
         )
 
         # --------------------------------
-        # SHOW RAW DATA
+        # TRAINING DATA
         # --------------------------------
 
-        with st.expander("View Demand Data"):
+        with st.expander("Training Data"):
 
-            st.dataframe(daily)
+            st.dataframe(train)
+
+        # --------------------------------
+        # TEST DATA
+        # --------------------------------
+
+        with st.expander("Testing Data"):
+
+            st.dataframe(test)
 
     except Exception as e:
 
