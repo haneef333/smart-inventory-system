@@ -88,6 +88,11 @@ def show_dashboard_page():
         conn
     )
 
+    inventory_df = pd.read_sql_query(
+        "SELECT * FROM inventory",
+        conn
+    )
+
     if sales_df.empty:
         st.warning("No sales data available")
         return
@@ -191,6 +196,93 @@ def show_dashboard_page():
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
+    # -------------------------------
+    # EXECUTIVE SUMMARY
+    # -------------------------------
+
+    st.subheader("📌 Executive Summary")
+
+    highest_revenue_product = (
+        sales_df.groupby("product_name")["revenue"]
+        .sum()
+        .idxmax()
+    )
+
+    highest_profit_product = (
+        sales_df.groupby("product_name")["profit"]
+        .sum()
+        .idxmax()
+    )
+
+    average_order_value = (
+        sales_df["revenue"].mean()
+    )
+
+    total_products = inventory_df["item_name"].nunique()
+
+    summary_col1, summary_col2 = st.columns(2)
+
+    with summary_col1:
+        st.info(f"""
+    **Highest Revenue Product**
+    {highest_revenue_product}
+
+    **Highest Profit Product**
+    {highest_profit_product}
+    """)
+
+    with summary_col2:
+        st.info(f"""
+    **Average Order Value**
+    ₹{average_order_value:.2f}
+
+    **Products in Inventory**
+    {total_products}
+    """)
+    # -------------------------------
+    # INVENTORY OVERVIEW
+    # -------------------------------
+
+    st.subheader("📦 Inventory Overview")
+
+    col1, col2, col3 = st.columns(3)
+
+    low_stock = inventory_df[
+        inventory_df["quantity"] <=
+        inventory_df["reorder_threshold"]
+    ]
+
+    with col1:
+        st.metric(
+            "Products in Inventory",
+            len(inventory_df)
+        )
+
+    with col2:
+        st.metric(
+            "Total Stock",
+            int(inventory_df["quantity"].sum())
+        )
+
+    with col3:
+        st.metric(
+            "Low Stock Items",
+            len(low_stock)
+        )
+        if not low_stock.empty:
+
+            st.warning("⚠️ Low Stock Items")
+
+            st.dataframe(
+                low_stock[
+                    [
+                        "item_name",
+                        "quantity",
+                        "reorder_threshold"
+                    ]
+                ],
+                use_container_width=True
+            )
 
     # -------------------------------
     # DAILY REVENUE
@@ -411,6 +503,20 @@ def show_dashboard_page():
     st.plotly_chart(
         fig4,
         use_container_width=True
+    )
+    # -------------------------------
+    # DOWNLOAD REPORT
+    # -------------------------------
+
+    st.subheader("📥 Download Dashboard Report")
+
+    csv = sales_df.to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="Download Sales Report (CSV)",
+        data=csv,
+        file_name="sales_report.csv",
+        mime="text/csv"
     )
     # -------------------------------
     # RECENT SALES

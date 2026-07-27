@@ -448,6 +448,37 @@ def show_ml_forecast_page():
                 daily.tail(20),
                 use_container_width=True
             )
+        # --------------------------------
+        # FEATURE IMPORTANCE
+        # --------------------------------
+
+        st.subheader("📊 XGBoost Feature Importance")
+
+        importance_df = pd.DataFrame({
+            "Feature": feature_columns,
+            "Importance": xgb_model.feature_importances_
+        }).sort_values(
+            by="Importance",
+            ascending=False
+        )
+
+        fig, ax = plt.subplots(figsize=(8, 4))
+
+        ax.barh(
+            importance_df["Feature"],
+            importance_df["Importance"]
+        )
+
+        ax.set_xlabel("Importance")
+        ax.set_ylabel("Feature")
+        ax.invert_yaxis()
+
+        st.pyplot(fig)
+
+        st.dataframe(
+            importance_df,
+            use_container_width=True
+        )
 
         # --------------------------------
         # TRAINING DATA
