@@ -151,6 +151,19 @@ def show_ml_forecast_page():
         )
 
         forecast = model.predict(future)
+        forecast_download = forecast[[
+            "ds",
+            "yhat",
+            "yhat_lower",
+            "yhat_upper"
+        ]].copy()
+
+        forecast_download.columns = [
+            "Date",
+            "Predicted Demand",
+            "Lower Bound",
+            "Upper Bound"
+        ]
 
         # --------------------------------
         # PREPARE TEST PREDICTIONS
@@ -400,7 +413,20 @@ def show_ml_forecast_page():
         fig = model.plot(forecast)
 
         st.pyplot(fig)
+        # --------------------------------
+        # DOWNLOAD FORECAST
+        # --------------------------------
 
+        st.subheader("Download Forecast")
+
+        csv = forecast_download.to_csv(index=False)
+
+        st.download_button(
+            label="📥 Download Forecast CSV",
+            data=csv,
+            file_name=f"{selected_product}_forecast.csv",
+            mime="text/csv"
+        )
         # --------------------------------
         # HISTORICAL DEMAND
         # --------------------------------
@@ -440,5 +466,5 @@ def show_ml_forecast_page():
     except Exception as e:
 
         st.error(
-            f"Prophet model failed: {str(e)}"
+            st.error(f"Forecasting failed: {e}")
         )

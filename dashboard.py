@@ -111,6 +111,31 @@ def show_dashboard_page():
     ).fillna(0)
 
     sales_df = sales_df.dropna(subset=["sale_date"])
+    # -------------------------------
+    # DATE FILTER
+    # -------------------------------
+
+    st.sidebar.header("Filters")
+
+    min_date = sales_df["sale_date"].min().date()
+    max_date = sales_df["sale_date"].max().date()
+
+    start_date, end_date = st.sidebar.date_input(
+        "Select Date Range",
+        value=(min_date, max_date),
+        min_value=min_date,
+        max_value=max_date
+    )
+
+    # Filter dataframe
+    sales_df = sales_df[
+        (sales_df["sale_date"].dt.date >= start_date) &
+        (sales_df["sale_date"].dt.date <= end_date)
+    ]
+
+    if sales_df.empty:
+        st.warning("No data available for the selected date range.")
+        return
 
     # -------------------------------
     # KPI VALUES
