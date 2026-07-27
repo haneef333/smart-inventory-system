@@ -496,6 +496,4 @@ def show_ml_forecast_page():
 
     except Exception as e:
 
-        st.error(
-            st.error(f"Forecasting failed: {e}")
-        )
+        st.error(f"Forecasting failed: {e}")
