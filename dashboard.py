@@ -136,6 +136,27 @@ def show_dashboard_page():
     if sales_df.empty:
         st.warning("No data available for the selected date range.")
         return
+    # -------------------------------
+    # PRODUCT FILTER
+    # -------------------------------
+
+    products = ["All"] + sorted(
+        sales_df["product_name"].unique().tolist()
+    )
+
+    selected_product = st.sidebar.selectbox(
+        "Select Product",
+        products
+    )
+
+    if selected_product != "All":
+        sales_df = sales_df[
+            sales_df["product_name"] == selected_product
+        ]
+
+    if sales_df.empty:
+        st.warning("No data available for the selected product.")
+        return
 
     # -------------------------------
     # KPI VALUES
