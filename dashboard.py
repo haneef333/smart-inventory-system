@@ -380,7 +380,38 @@ def show_dashboard_page():
         fig3,
         use_container_width=True
     )
+    # -------------------------------
+    # REVENUE DISTRIBUTION
+    # -------------------------------
 
+    st.subheader("🥧 Revenue Distribution by Product")
+
+    product_revenue = (
+        sales_df
+        .groupby("product_name")["revenue"]
+        .sum()
+        .reset_index()
+    )
+
+    fig4 = px.pie(
+        product_revenue,
+        names="product_name",
+        values="revenue",
+        template="plotly_dark",
+        hole=0.4
+    )
+
+    fig4.update_layout(
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#0f172a",
+        font_color="white",
+        height=500
+    )
+
+    st.plotly_chart(
+        fig4,
+        use_container_width=True
+    )
     # -------------------------------
     # RECENT SALES
     # -------------------------------
