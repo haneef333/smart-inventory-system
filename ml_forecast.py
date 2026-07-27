@@ -368,41 +368,7 @@ def show_ml_forecast_page():
         RMSE: {scores[best_model]:.2f}
         """
         )
-        # --------------------------------
-        # FEATURE IMPORTANCE
-        # --------------------------------
-
-        st.subheader("XGBoost Feature Importance")
-
-        importance_df = pd.DataFrame({
-            "Feature": feature_columns,
-            "Importance": xgb_model.feature_importances_
-        })
-
-        importance_df = importance_df.sort_values(
-            by="Importance",
-            ascending=False
-        )
-
-        fig, ax = plt.subplots(figsize=(8, 4))
-
-        ax.bar(
-            importance_df["Feature"],
-            importance_df["Importance"]
-        )
-
-        ax.set_xlabel("Features")
-        ax.set_ylabel("Importance")
-        ax.set_title("Feature Importance")
-
-        plt.xticks(rotation=45)
-
-        st.pyplot(fig)
-
-        st.dataframe(
-            importance_df,
-            use_container_width=True
-        )
+    
 
         # --------------------------------
         # FORECAST PLOT
