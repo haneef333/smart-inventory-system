@@ -228,6 +228,45 @@ def show_dashboard_page():
         fig1,
         use_container_width=True
     )
+    # -------------------------------
+    # MONTHLY REVENUE
+    # -------------------------------
+
+    monthly_revenue = (
+        sales_df
+        .groupby(
+            sales_df["sale_date"].dt.to_period("M")
+        )["revenue"]
+        .sum()
+        .reset_index()
+    )
+
+    monthly_revenue["sale_date"] = (
+        monthly_revenue["sale_date"]
+        .astype(str)
+    )
+
+    st.subheader("📅 Monthly Revenue")
+
+    fig_month = px.bar(
+        monthly_revenue,
+        x="sale_date",
+        y="revenue",
+        color="revenue",
+        template="plotly_dark"
+    )
+
+    fig_month.update_layout(
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#0f172a",
+        font_color="white",
+        height=450
+    )
+
+    st.plotly_chart(
+        fig_month,
+        use_container_width=True
+    )
 
     # -------------------------------
     # DAILY PROFIT
