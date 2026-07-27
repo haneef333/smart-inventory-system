@@ -305,6 +305,45 @@ def show_dashboard_page():
         fig2,
         use_container_width=True
     )
+    # -------------------------------
+    # MONTHLY PROFIT
+    # -------------------------------
+
+    monthly_profit = (
+        sales_df
+        .groupby(
+            sales_df["sale_date"].dt.to_period("M")
+        )["profit"]
+        .sum()
+        .reset_index()
+    )
+
+    monthly_profit["sale_date"] = (
+        monthly_profit["sale_date"]
+        .astype(str)
+    )
+
+    st.subheader("📅 Monthly Profit")
+
+    fig_month_profit = px.bar(
+        monthly_profit,
+        x="sale_date",
+        y="profit",
+        color="profit",
+        template="plotly_dark"
+    )
+
+    fig_month_profit.update_layout(
+        paper_bgcolor="#0f172a",
+        plot_bgcolor="#0f172a",
+        font_color="white",
+        height=450
+    )
+
+    st.plotly_chart(
+        fig_month_profit,
+        use_container_width=True
+    )
 
     # -------------------------------
     # TOP PRODUCTS
