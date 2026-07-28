@@ -2,7 +2,7 @@ import sqlite3
 import pandas as pd
 
 # Connect to database
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 
 # Read transaction data
 df = pd.read_sql(

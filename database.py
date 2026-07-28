@@ -1,7 +1,7 @@
 import sqlite3
 
 # Connect to database
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 
 # Create cursor
 cursor = conn.cursor()

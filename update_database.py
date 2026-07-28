@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 cursor = conn.cursor()
 
 try:

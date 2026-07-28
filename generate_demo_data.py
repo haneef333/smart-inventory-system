@@ -11,7 +11,7 @@ It is NOT used for model training or evaluation.
 Real forecasting uses imported historical sales data.
 """
 # Database connection
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 
 cursor = conn.cursor()
 

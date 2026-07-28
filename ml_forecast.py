@@ -12,7 +12,7 @@ from sklearn.metrics import (
 
 # Database connection
 conn = sqlite3.connect(
-    "data/bakery.db",
+    "data/inventory.db",
     check_same_thread=False
 )
 

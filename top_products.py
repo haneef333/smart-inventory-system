@@ -1,7 +1,7 @@
 import sqlite3
 import pandas as pd
 
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 
 df = pd.read_sql("""
 SELECT

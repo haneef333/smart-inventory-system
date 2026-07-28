@@ -8,7 +8,7 @@ os.makedirs("data", exist_ok=True)
 import database
 
 # Populate with demo data if sales table is empty
-conn_check = sqlite3.connect("data/bakery.db")
+conn_check = sqlite3.connect("data/inventory.db")
 cursor_check = conn_check.cursor()
 cursor_check.execute("SELECT COUNT(*) FROM sales")
 sales_count = cursor_check.fetchone()[0]

@@ -69,7 +69,7 @@ section[data-testid="stSidebar"] {
 # DATABASE
 # -------------------------------
 conn = sqlite3.connect(
-    "data/bakery.db",
+    "data/inventory.db",
     check_same_thread=False
 )
 

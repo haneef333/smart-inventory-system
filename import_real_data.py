@@ -5,7 +5,7 @@ import pandas as pd
 df = pd.read_csv("BreadBasket_DMS.csv")
 
 # Connect to database
-conn = sqlite3.connect("data/bakery.db")
+conn = sqlite3.connect("data/inventory.db")
 
 # Save dataset into a new table
 df.to_sql(

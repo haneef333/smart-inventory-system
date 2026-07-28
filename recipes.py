@@ -3,7 +3,7 @@ import sqlite3
 import pandas as pd
 
 # Database connection
-conn = sqlite3.connect("data/bakery.db", check_same_thread=False)
+conn = sqlite3.connect("data/inventory.db", check_same_thread=False)
 cursor = conn.cursor()
 
 def show_recipe_page():

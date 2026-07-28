@@ -1,5 +1,5 @@
 venv/
 __pycache__/
 *.pyc
-data/bakery.db
+data/inventory.db
 .env
