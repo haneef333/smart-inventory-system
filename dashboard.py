@@ -73,6 +73,17 @@ conn = sqlite3.connect(
     check_same_thread=False
 )
 
+
+@st.cache_data
+def load_sales():
+    return pd.read_sql_query("SELECT * FROM sales", conn)
+
+
+@st.cache_data
+def load_inventory():
+    return pd.read_sql_query("SELECT * FROM inventory", conn)
+
+
 # -------------------------------
 # DASHBOARD FUNCTION
 # -------------------------------
@@ -81,17 +92,11 @@ def show_dashboard_page():
     st.title("📊 Smart Inventory Analytics")
 
     # -------------------------------
-    # LOAD DATA
+    # LOAD DATA (cached)
     # -------------------------------
-    sales_df = pd.read_sql_query(
-        "SELECT * FROM sales",
-        conn
-    )
+    sales_df = load_sales()
 
-    inventory_df = pd.read_sql_query(
-        "SELECT * FROM inventory",
-        conn
-    )
+    inventory_df = load_inventory()
 
     if sales_df.empty:
         st.warning("No sales data available")
