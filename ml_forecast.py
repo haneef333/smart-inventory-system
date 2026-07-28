@@ -29,6 +29,24 @@ def show_ml_forecast_page():
     st.header("Advanced Demand Forecasting")
 
     daily_df = load_daily_demand()
+
+@st.cache_resource
+def train_prophet_model(train_df):
+    m = Prophet()
+    m.fit(train_df)
+    return m
+
+
+@st.cache_resource
+def train_xgb_model(X_train, y_train):
+    xgb = XGBRegressor(
+        n_estimators=100,
+        learning_rate=0.1,
+        max_depth=4,
+        random_state=42
+    )
+    xgb.fit(X_train, y_train)
+    return xgb
 def show_ml_forecast_page():
 
     st.header("Advanced Demand Forecasting")
@@ -140,21 +158,12 @@ def show_ml_forecast_page():
 
     try:
 
-        model = Prophet()
-
-        model.fit(train)
+        model = train_prophet_model(train)
         # --------------------------------
         # XGBOOST MODEL
         # --------------------------------
 
-        xgb_model = XGBRegressor(
-            n_estimators=100,
-            learning_rate=0.1,
-            max_depth=4,
-            random_state=42
-        )
-
-        xgb_model.fit(X_train, y_train)
+        xgb_model = train_xgb_model(X_train, y_train)
 
         xgb_predictions = xgb_model.predict(X_test)
 
