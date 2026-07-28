@@ -16,7 +16,19 @@ conn = sqlite3.connect(
     check_same_thread=False
 )
 
+@st.cache_data
+def load_daily_demand():
+    return pd.read_sql_query(
+        "SELECT * FROM daily_product_demand_clean",
+        conn
+    )
 
+
+def show_ml_forecast_page():
+
+    st.header("Advanced Demand Forecasting")
+
+    daily_df = load_daily_demand()
 def show_ml_forecast_page():
 
     st.header("Advanced Demand Forecasting")
