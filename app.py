@@ -16,7 +16,30 @@ conn_check.close()
 
 if sales_count == 0:
     import generate_demo_data  # placeholder — will confirm correct script name below
+# Build the real demand-forecast table if it doesn't exist yet
+conn_check2 = sqlite3.connect("data/inventory.db")
+cursor_check2 = conn_check2.cursor()
+cursor_check2.execute(
+    "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_product_demand_clean'"
+)
+table_exists = cursor_check2.fetchone()
+conn_check2.close()
 
+if not table_exists:
+    import import_real_data
+    import prepare_daily_demand
+    import clean_daily_demand
+# Seed real bakery products/ingredients/recipes if not already present
+conn_check3 = sqlite3.connect("data/inventory.db")
+cursor_check3 = conn_check3.cursor()
+cursor_check3.execute(
+    "SELECT id FROM inventory WHERE item_name = 'Wheat Flour'"
+)
+products_seeded = cursor_check3.fetchone()
+conn_check3.close()
+
+if not products_seeded:
+    import seed_products
 import streamlit as st
 from dashboard import show_dashboard_page
 from inventory import show_inventory_page
