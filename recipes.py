@@ -6,6 +6,7 @@ import pandas as pd
 conn = sqlite3.connect("data/inventory.db", check_same_thread=False)
 cursor = conn.cursor()
 
+
 def show_recipe_page():
 
     st.header("Recipe Management")
@@ -63,14 +64,47 @@ def show_recipe_page():
             st.success("Recipe Added Successfully!")
 
     # --------------------------------
-    # VIEW RECIPES
+    # VIEW SINGLE RECIPE (product-first view)
     # --------------------------------
 
-    st.subheader("Recipe List")
+    st.subheader("View Recipe by Product")
 
     recipe_df = pd.read_sql_query(
         "SELECT * FROM recipes",
         conn
     )
 
-    st.dataframe(recipe_df)
+    if recipe_df.empty:
+
+        st.info("No recipes added yet.")
+
+    else:
+
+        product_list = sorted(
+            recipe_df["product_name"].unique().tolist()
+        )
+
+        selected_product = st.selectbox(
+            "Select Product",
+            product_list
+        )
+
+        product_recipe_df = recipe_df[
+            recipe_df["product_name"] == selected_product
+        ][["ingredient_name", "quantity_needed", "unit"]]
+
+        st.dataframe(
+            product_recipe_df,
+            use_container_width=True
+        )
+
+    # --------------------------------
+    # VIEW ALL RECIPES (kept as secondary option)
+    # --------------------------------
+
+    with st.expander("View All Recipes"):
+
+        st.dataframe(
+            recipe_df,
+            use_container_width=True
+        )
