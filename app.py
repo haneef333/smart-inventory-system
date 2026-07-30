@@ -102,7 +102,7 @@ menu = st.sidebar.radio(
     [
         "📊 Dashboard",
         "📦 Inventory",
-        "🍰 Recipes",
+        "📖 Recipes",
         "🧾 Orders",
         "📈 Forecast"
     ]
@@ -117,7 +117,7 @@ if menu == "📊 Dashboard":
 elif menu == "📦 Inventory":
     show_inventory_page()
 
-elif menu == "🍰 Recipes":
+elif menu == "📖 Recipes":
     show_recipe_page()
 
 elif menu == "🧾 Orders":
