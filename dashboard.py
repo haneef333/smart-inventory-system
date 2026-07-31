@@ -4,59 +4,59 @@ import sqlite3
 import plotly.express as px
 
 
-
+def show_dashboard_page():
 # -------------------------------
 # CUSTOM CSS
 # -------------------------------
-st.markdown("""
-<style>
+    st.markdown("""
+    <style>
 
-/* Main App */
-.stApp {
-    background-color: #0f172a;
-    color: white;
-}
+    /* Main App */
+    .stApp {
+        background-color: #0f172a;
+        color: white;
+    }
 
-/* Sidebar */
-section[data-testid="stSidebar"] {
-    background-color: #111827;
-}
+    /* Sidebar */
+    section[data-testid="stSidebar"] {
+        background-color: #111827;
+    }
 
-/* Metric Cards */
-[data-testid="metric-container"] {
-    background: linear-gradient(
-        145deg,
-        #1e293b,
-        #111827
-    );
+    /* Metric Cards */
+    [data-testid="metric-container"] {
+        background: linear-gradient(
+            145deg,
+            #1e293b,
+            #111827
+        );
 
-    border: 1px solid rgba(255,255,255,0.05);
+        border: 1px solid rgba(255,255,255,0.05);
 
-    padding: 20px;
-    border-radius: 18px;
+        padding: 20px;
+        border-radius: 18px;
 
-    box-shadow:
-        0 4px 15px rgba(0,0,0,0.35);
-}
+        box-shadow:
+            0 4px 15px rgba(0,0,0,0.35);
+    }
 
-/* Metric Labels */
-[data-testid="metric-container"] label {
-    color: #94a3b8 !important;
-}
+    /* Metric Labels */
+    [data-testid="metric-container"] label {
+        color: #94a3b8 !important;
+    }
 
-/* Charts */
-.plot-container {
-    border-radius: 15px;
-}
+    /* Charts */
+    .plot-container {
+        border-radius: 15px;
+    }
 
-/* Dataframe */
-[data-testid="stDataFrame"] {
-    border-radius: 15px;
-    overflow: hidden;
-}
+    /* Dataframe */
+    [data-testid="stDataFrame"] {
+        border-radius: 15px;
+        overflow: hidden;
+    }
 
-</style>
-""", unsafe_allow_html=True)
+    </style>
+    """, unsafe_allow_html=True)
 
 # -------------------------------
 # DATABASE
