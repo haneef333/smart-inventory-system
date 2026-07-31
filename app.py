@@ -1,4 +1,12 @@
 import os
+import cmdstanpy
+
+CMDSTAN_MARKER = "/tmp/.cmdstan_installed"
+
+if not os.path.exists(CMDSTAN_MARKER):
+    cmdstanpy.install_cmdstan()
+    with open(CMDSTAN_MARKER, "w") as f:
+        f.write("done")
 import sqlite3
 
 # Ensure data folder exists
