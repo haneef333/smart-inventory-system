@@ -13,56 +13,85 @@ if not os.path.exists(CMDSTAN_MARKER):
     cmdstanpy.install_cmdstan()
     with open(CMDSTAN_MARKER, "w") as f:
         f.write("done")
+
 import sqlite3
 
-# Ensure data folder exists
 os.makedirs("data", exist_ok=True)
 
-# Always ensure tables exist (safe — uses CREATE TABLE IF NOT EXISTS)
-import database
+DB_PATH = "data/inventory.db"
 
-# Populate with demo data if sales table is empty (self-healing if DB is missing/corrupted)
+
+def table_exists(cursor, table_name):
+    cursor.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+        (table_name,)
+    )
+    return cursor.fetchone() is not None
+
+
+# --------------------------------
+# OPEN DB, SELF-HEAL IF CORRUPTED
+# --------------------------------
 try:
-    conn_check = sqlite3.connect("data/inventory.db")
-    cursor_check = conn_check.cursor()
-    cursor_check.execute("SELECT COUNT(*) FROM sales")
-    sales_count = cursor_check.fetchone()[0]
-    conn_check.close()
+    conn = sqlite3.connect(DB_PATH)
+    conn.execute("SELECT 1")
 except sqlite3.DatabaseError:
-    # DB file is missing, corrupted, or malformed — remove and rebuild from scratch
-    conn_check.close() if 'conn_check' in dir() else None
-    if os.path.exists("data/inventory.db"):
-        os.remove("data/inventory.db")
-    sales_count = 0
+    conn.close()
+    if os.path.exists(DB_PATH):
+        os.remove(DB_PATH)
+    conn = sqlite3.connect(DB_PATH)
 
+conn.close()
+
+# --------------------------------
+# ALWAYS ENSURE BASE SCHEMA EXISTS
+# --------------------------------
 import database
 
-if sales_count == 0:
-    import generate_demo_data
-# Build the real demand-forecast table if it doesn't exist yet
-conn_check2 = sqlite3.connect("data/inventory.db")
-cursor_check2 = conn_check2.cursor()
-cursor_check2.execute(
-    "SELECT name FROM sqlite_master WHERE type='table' AND name='daily_product_demand_clean'"
-)
-table_exists = cursor_check2.fetchone()
-conn_check2.close()
+# --------------------------------
+# RE-OPEN AFTER database.py
+# (it manages its own connection/commit/close)
+# --------------------------------
+conn = sqlite3.connect(DB_PATH)
+cursor = conn.cursor()
 
-if not table_exists:
+# --------------------------------
+# DEMO SALES DATA
+# --------------------------------
+needs_demo_data = (
+    not table_exists(cursor, "sales")
+    or cursor.execute("SELECT COUNT(*) FROM sales").fetchone()[0] == 0
+)
+
+if needs_demo_data:
+    import generate_demo_data
+
+# --------------------------------
+# REAL DEMAND-FORECAST DATA
+# --------------------------------
+if not table_exists(cursor, "daily_product_demand_clean"):
     import import_real_data
     import prepare_daily_demand
     import clean_daily_demand
-# Seed real bakery products/ingredients/recipes if not already present
-conn_check3 = sqlite3.connect("data/inventory.db")
-cursor_check3 = conn_check3.cursor()
-cursor_check3.execute(
-    "SELECT id FROM inventory WHERE item_name = 'Wheat Flour'"
-)
-products_seeded = cursor_check3.fetchone()
-conn_check3.close()
 
-if not products_seeded:
+# --------------------------------
+# SEED REAL PRODUCTS / INGREDIENTS / RECIPES
+# --------------------------------
+needs_product_seed = (
+    not table_exists(cursor, "inventory")
+    or cursor.execute(
+        "SELECT id FROM inventory WHERE item_name = 'Wheat Flour'"
+    ).fetchone() is None
+)
+
+if needs_product_seed:
     import seed_products
+
+conn.close()
+
+# --------------------------------
+# STREAMLIT APP
+# --------------------------------
 import streamlit as st
 from dashboard import show_dashboard_page
 from inventory import show_inventory_page
@@ -84,6 +113,7 @@ st.set_page_config(
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+
 def login():
     st.title("🔐 Login")
     st.info("👉 Demo credentials — Username: **admin**  Password: **admin**")
@@ -101,6 +131,7 @@ def login():
     with col2:
         if st.button("Continue as Guest"):
             st.session_state.logged_in = True
+
 
 if not st.session_state.logged_in:
     login()
