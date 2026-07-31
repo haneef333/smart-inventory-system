@@ -3,14 +3,7 @@ import pandas as pd
 import sqlite3
 import plotly.express as px
 
-# -------------------------------
-# PAGE CONFIG
-# -------------------------------
-st.set_page_config(
-    page_title="Smart Inventory Dashboard & Demand System",
-    page_icon="📊",
-    layout="wide"
-)
+
 
 # -------------------------------
 # CUSTOM CSS
