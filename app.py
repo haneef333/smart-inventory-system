@@ -21,15 +21,24 @@ os.makedirs("data", exist_ok=True)
 # Always ensure tables exist (safe — uses CREATE TABLE IF NOT EXISTS)
 import database
 
-# Populate with demo data if sales table is empty
-conn_check = sqlite3.connect("data/inventory.db")
-cursor_check = conn_check.cursor()
-cursor_check.execute("SELECT COUNT(*) FROM sales")
-sales_count = cursor_check.fetchone()[0]
-conn_check.close()
+# Populate with demo data if sales table is empty (self-healing if DB is missing/corrupted)
+try:
+    conn_check = sqlite3.connect("data/inventory.db")
+    cursor_check = conn_check.cursor()
+    cursor_check.execute("SELECT COUNT(*) FROM sales")
+    sales_count = cursor_check.fetchone()[0]
+    conn_check.close()
+except sqlite3.DatabaseError:
+    # DB file is missing, corrupted, or malformed — remove and rebuild from scratch
+    conn_check.close() if 'conn_check' in dir() else None
+    if os.path.exists("data/inventory.db"):
+        os.remove("data/inventory.db")
+    sales_count = 0
+
+import database
 
 if sales_count == 0:
-    import generate_demo_data  # placeholder — will confirm correct script name below
+    import generate_demo_data
 # Build the real demand-forecast table if it doesn't exist yet
 conn_check2 = sqlite3.connect("data/inventory.db")
 cursor_check2 = conn_check2.cursor()
