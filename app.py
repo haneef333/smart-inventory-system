@@ -7,12 +7,11 @@ os.chdir(SCRIPT_DIR)
 
 import cmdstanpy
 
-CMDSTAN_MARKER = "/tmp/.cmdstan_installed"
-
-if not os.path.exists(CMDSTAN_MARKER):
+try:
+    if cmdstanpy.cmdstan_path() is None:
+        cmdstanpy.install_cmdstan()
+except ValueError:
     cmdstanpy.install_cmdstan()
-    with open(CMDSTAN_MARKER, "w") as f:
-        f.write("done")
 
 import sqlite3
 
