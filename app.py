@@ -5,13 +5,6 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, SCRIPT_DIR)
 os.chdir(SCRIPT_DIR)
 
-import cmdstanpy
-
-try:
-    if cmdstanpy.cmdstan_path() is None:
-        cmdstanpy.install_cmdstan()
-except ValueError:
-    cmdstanpy.install_cmdstan()
 
 import sqlite3
 

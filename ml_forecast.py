@@ -16,6 +16,7 @@ conn = sqlite3.connect(
     check_same_thread=False
 )
 
+
 @st.cache_data
 def load_daily_demand():
     return pd.read_sql_query(
@@ -23,12 +24,6 @@ def load_daily_demand():
         conn
     )
 
-
-def show_ml_forecast_page():
-
-    st.header("Advanced Demand Forecasting")
-
-    daily_df = load_daily_demand()
 
 @st.cache_resource
 def train_prophet_model(train_df):
@@ -47,6 +42,8 @@ def train_xgb_model(X_train, y_train):
     )
     xgb.fit(X_train, y_train)
     return xgb
+
+
 def show_ml_forecast_page():
 
     st.header("Advanced Demand Forecasting")
@@ -54,10 +51,7 @@ def show_ml_forecast_page():
     # LOAD REAL DAILY DEMAND DATA
     # --------------------------------
 
-    daily_df = pd.read_sql_query(
-        "SELECT * FROM daily_product_demand_clean",
-        conn
-    )
+    daily_df = load_daily_demand()
 
     if daily_df.empty:
         st.warning("No demand data available.")
@@ -152,105 +146,19 @@ def show_ml_forecast_page():
 
     X_test = test[feature_columns]
     y_test = test["y"]
-    # --------------------------------
-    # TRAIN PROPHET
-    # --------------------------------
+
+    actual = test.reset_index(drop=True)
+    last_actual = actual["y"].iloc[-1]
 
     try:
 
-        model = train_prophet_model(train)
         # --------------------------------
-        # XGBOOST MODEL
+        # XGBOOST MODEL (always runs — no external compiled dependency)
         # --------------------------------
 
         xgb_model = train_xgb_model(X_train, y_train)
 
         xgb_predictions = xgb_model.predict(X_test)
-
-        future = model.make_future_dataframe(
-            periods=30
-        )
-
-        forecast = model.predict(future)
-        forecast_download = forecast[[
-            "ds",
-            "yhat",
-            "yhat_lower",
-            "yhat_upper"
-        ]].copy()
-
-        forecast_download.columns = [
-            "Date",
-            "Predicted Demand",
-            "Lower Bound",
-            "Upper Bound"
-        ]
-
-        # --------------------------------
-        # PREPARE TEST PREDICTIONS
-        # --------------------------------
-
-        forecast_test = forecast.tail(30).copy()
-
-        forecast_test = forecast_test[
-            ["ds", "yhat"]
-        ].reset_index(drop=True)
-
-        actual = test.reset_index(drop=True)
-
-        prophet_prediction = forecast_test["yhat"].iloc[-1]
-
-        last_actual = actual["y"].iloc[-1]
-
-        # --------------------------------
-        # MOVING AVERAGE BASELINE
-        # --------------------------------
-
-        moving_average_prediction = (
-            train["y"]
-            .tail(7)
-            .mean()
-        )
-
-        moving_average_predictions = np.repeat(
-            moving_average_prediction,
-            len(actual)
-        )
-
-        # --------------------------------
-        # MODEL EVALUATION
-        # --------------------------------
-
-        prophet_rmse = np.sqrt(
-            mean_squared_error(
-                actual["y"],
-                forecast_test["yhat"]
-            )
-        )
-
-        prophet_mape = (
-            mean_absolute_percentage_error(
-                actual["y"],
-                forecast_test["yhat"]
-            ) * 100
-        )
-
-        baseline_rmse = np.sqrt(
-            mean_squared_error(
-                actual["y"],
-                moving_average_predictions
-            )
-        )
-
-        baseline_mape = (
-            mean_absolute_percentage_error(
-                actual["y"],
-                moving_average_predictions
-            ) * 100
-        )
-        # --------------------------------
-        # XGBOOST EVALUATION
-        # --------------------------------
 
         xgb_prediction = xgb_predictions[-1]
 
@@ -267,12 +175,84 @@ def show_ml_forecast_page():
                 xgb_predictions
             ) * 100
         )
-        
-                # --------------------------------
+
+        # --------------------------------
+        # MOVING AVERAGE BASELINE (always runs)
+        # --------------------------------
+
+        moving_average_prediction = (
+            train["y"]
+            .tail(7)
+            .mean()
+        )
+
+        moving_average_predictions = np.repeat(
+            moving_average_prediction,
+            len(actual)
+        )
+
+        baseline_rmse = np.sqrt(
+            mean_squared_error(
+                actual["y"],
+                moving_average_predictions
+            )
+        )
+
+        baseline_mape = (
+            mean_absolute_percentage_error(
+                actual["y"],
+                moving_average_predictions
+            ) * 100
+        )
+
+        # --------------------------------
+        # PROPHET (isolated — may be unavailable in this environment)
+        # --------------------------------
+
+        prophet_available = True
+        model = None
+        forecast = None
+        forecast_download = None
+
+        try:
+            model = train_prophet_model(train)
+
+            future = model.make_future_dataframe(periods=30)
+            forecast = model.predict(future)
+
+            forecast_download = forecast[[
+                "ds", "yhat", "yhat_lower", "yhat_upper"
+            ]].copy()
+            forecast_download.columns = [
+                "Date", "Predicted Demand", "Lower Bound", "Upper Bound"
+            ]
+
+            forecast_test = forecast.tail(30)[["ds", "yhat"]].reset_index(drop=True)
+
+            prophet_prediction = forecast_test["yhat"].iloc[-1]
+
+            prophet_rmse = np.sqrt(
+                mean_squared_error(actual["y"], forecast_test["yhat"])
+            )
+            prophet_mape = (
+                mean_absolute_percentage_error(actual["y"], forecast_test["yhat"]) * 100
+            )
+
+        except Exception:
+            prophet_available = False
+            st.info(
+                "ℹ️ Prophet model is temporarily unavailable in this environment "
+                "(Stan backend compilation issue). Showing Moving Average and "
+                "XGBoost results below — Prophet works normally when run locally."
+            )
+
+        # --------------------------------
         # TREND
         # --------------------------------
 
-        if prophet_prediction > last_actual:
+        trend_reference = prophet_prediction if prophet_available else xgb_prediction
+
+        if trend_reference > last_actual:
             trend = "Increasing 📈"
         else:
             trend = "Decreasing 📉"
@@ -283,21 +263,17 @@ def show_ml_forecast_page():
 
         st.subheader("Forecast Result")
 
-        st.success(
-            f"""
-            Product: {selected_product}
+        result_lines = [f"Product: {selected_product}", ""]
 
-            Prophet Prediction: {prophet_prediction:.2f}
+        if prophet_available:
+            result_lines.append(f"Prophet Prediction: {prophet_prediction:.2f}")
 
-            Moving Average Prediction: {moving_average_prediction:.2f}
+        result_lines.append(f"Moving Average Prediction: {moving_average_prediction:.2f}")
+        result_lines.append(f"XGBoost Prediction: {xgb_prediction:.2f}")
+        result_lines.append(f"Last Actual Demand: {last_actual}")
+        result_lines.append(f"Trend: {trend}")
 
-            XGBoost Prediction: {xgb_prediction:.2f}
-
-            Last Actual Demand: {last_actual}
-
-            Trend: {trend}
-            """
-        )
+        st.success("\n\n".join(result_lines))
 
         # --------------------------------
         # TRAIN / TEST INFO
@@ -308,16 +284,10 @@ def show_ml_forecast_page():
         col1, col2 = st.columns(2)
 
         with col1:
-            st.metric(
-                "Training Days",
-                len(train)
-            )
+            st.metric("Training Days", len(train))
 
         with col2:
-            st.metric(
-                "Testing Days",
-                len(test)
-            )
+            st.metric("Testing Days", len(test))
 
         # --------------------------------
         # MODEL COMPARISON
@@ -325,23 +295,22 @@ def show_ml_forecast_page():
 
         st.subheader("Model Comparison")
 
+        comparison_models = ["Moving Average", "XGBoost"]
+        comparison_predictions = [
+            round(moving_average_prediction, 2),
+            round(xgb_prediction, 2)
+        ]
+
+        if prophet_available:
+            comparison_models.insert(1, "Prophet")
+            comparison_predictions.insert(1, round(prophet_prediction, 2))
+
         comparison_df = pd.DataFrame({
-            "Model": [
-                "Moving Average",
-                "Prophet",
-                "XGBoost"
-            ],
-            "Prediction": [
-                round(moving_average_prediction, 2),
-                round(prophet_prediction, 2),
-                round(xgb_prediction, 2)
-            ]
+            "Model": comparison_models,
+            "Prediction": comparison_predictions
         })
 
-        st.dataframe(
-            comparison_df,
-            use_container_width=True
-        )
+        st.dataframe(comparison_df, use_container_width=True)
 
         # --------------------------------
         # MODEL EVALUATION
@@ -349,34 +318,28 @@ def show_ml_forecast_page():
 
         st.subheader("Model Evaluation")
 
-        evaluation_df = pd.DataFrame({
-            "Model": [
-                "Moving Average",
-                "Prophet",
-                "XGBoost"
-            ],
-            "RMSE": [
-                round(baseline_rmse, 2),
-                round(prophet_rmse, 2),
-                round(xgb_rmse, 2)
-            ],
-            "MAPE (%)": [
-                round(baseline_mape, 2),
-                round(prophet_mape, 2),
-                round(xgb_mape, 2)
-            ]
-        })
-
-        st.dataframe(
-            evaluation_df,
-            use_container_width=True
-        )
+        eval_models = ["Moving Average", "XGBoost"]
+        eval_rmse = [round(baseline_rmse, 2), round(xgb_rmse, 2)]
+        eval_mape = [round(baseline_mape, 2), round(xgb_mape, 2)]
 
         scores = {
             "Moving Average": baseline_rmse,
-            "Prophet": prophet_rmse,
             "XGBoost": xgb_rmse
         }
+
+        if prophet_available:
+            eval_models.insert(1, "Prophet")
+            eval_rmse.insert(1, round(prophet_rmse, 2))
+            eval_mape.insert(1, round(prophet_mape, 2))
+            scores["Prophet"] = prophet_rmse
+
+        evaluation_df = pd.DataFrame({
+            "Model": eval_models,
+            "RMSE": eval_rmse,
+            "MAPE (%)": eval_mape
+        })
+
+        st.dataframe(evaluation_df, use_container_width=True)
 
         best_model = min(scores, key=scores.get)
 
@@ -389,31 +352,31 @@ def show_ml_forecast_page():
         RMSE: {scores[best_model]:.2f}
         """
         )
-    
 
         # --------------------------------
-        # FORECAST PLOT
+        # FORECAST PLOT (Prophet only)
         # --------------------------------
 
-        st.subheader("Forecast Visualization")
+        if prophet_available:
+            st.subheader("Forecast Visualization")
+            fig = model.plot(forecast)
+            st.pyplot(fig)
 
-        fig = model.plot(forecast)
+            # --------------------------------
+            # DOWNLOAD FORECAST (Prophet only)
+            # --------------------------------
 
-        st.pyplot(fig)
-        # --------------------------------
-        # DOWNLOAD FORECAST
-        # --------------------------------
+            st.subheader("Download Forecast")
 
-        st.subheader("Download Forecast")
+            csv = forecast_download.to_csv(index=False)
 
-        csv = forecast_download.to_csv(index=False)
+            st.download_button(
+                label="📥 Download Forecast CSV",
+                data=csv,
+                file_name=f"{selected_product}_forecast.csv",
+                mime="text/csv"
+            )
 
-        st.download_button(
-            label="📥 Download Forecast CSV",
-            data=csv,
-            file_name=f"{selected_product}_forecast.csv",
-            mime="text/csv"
-        )
         # --------------------------------
         # HISTORICAL DEMAND
         # --------------------------------
