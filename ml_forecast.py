@@ -5,10 +5,7 @@ import matplotlib.pyplot as plt
 from prophet import Prophet
 from xgboost import XGBRegressor
 import numpy as np
-from sklearn.metrics import (
-    mean_squared_error,
-    mean_absolute_percentage_error
-)
+from sklearn.metrics import mean_squared_error
 
 # Database connection
 conn = sqlite3.connect(
@@ -42,6 +39,14 @@ def train_xgb_model(X_train, y_train):
     )
     xgb.fit(X_train, y_train)
     return xgb
+
+
+def smape(y_true, y_pred):
+    y_true = np.array(y_true)
+    y_pred = np.array(y_pred)
+    denominator = (np.abs(y_true) + np.abs(y_pred)) / 2
+    denominator = np.where(denominator == 0, 1, denominator)
+    return np.mean(np.abs(y_true - y_pred) / denominator) * 100
 
 
 def show_ml_forecast_page():
@@ -169,11 +174,9 @@ def show_ml_forecast_page():
             )
         )
 
-        xgb_mape = (
-            mean_absolute_percentage_error(
-                y_test,
-                xgb_predictions
-            ) * 100
+        xgb_mape = smape(
+            y_test,
+            xgb_predictions
         )
 
         # --------------------------------
@@ -198,11 +201,9 @@ def show_ml_forecast_page():
             )
         )
 
-        baseline_mape = (
-            mean_absolute_percentage_error(
-                actual["y"],
-                moving_average_predictions
-            ) * 100
+        baseline_mape = smape(
+            actual["y"],
+            moving_average_predictions
         )
 
         # --------------------------------
@@ -234,9 +235,7 @@ def show_ml_forecast_page():
             prophet_rmse = np.sqrt(
                 mean_squared_error(actual["y"], forecast_test["yhat"])
             )
-            prophet_mape = (
-                mean_absolute_percentage_error(actual["y"], forecast_test["yhat"]) * 100
-            )
+            prophet_mape = smape(actual["y"], forecast_test["yhat"])
 
         except Exception:
             prophet_available = False
@@ -336,7 +335,7 @@ def show_ml_forecast_page():
         evaluation_df = pd.DataFrame({
             "Model": eval_models,
             "RMSE": eval_rmse,
-            "MAPE (%)": eval_mape
+            "SMAPE (%)": eval_mape
         })
 
         st.dataframe(evaluation_df, use_container_width=True)

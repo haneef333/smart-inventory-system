@@ -1,70 +1,77 @@
-# Smart Inventory & Sales Forecasting System
+# Smart Inventory & Demand Forecasting System
 
-An AI-powered inventory management and business analytics platform built for a bakery-style business, combining real-time inventory tracking, order management, and machine learning-based demand forecasting in a single interactive dashboard.
+A configurable, recipe/BOM-driven inventory management platform with real-data-backed demand forecasting — built for any small business that sells recipe-based products (bakeries, cafés, food stalls, and similar), not just one specific use case.
 
-🔗 **Live Demo:** [smart-inventory-system.streamlit.app](https://smart-inventory-system-ecm5houyjzh2vim7cbefyd.streamlit.app/)
-**Demo login:** `admin` / `admin`
+## Problem Statement
 
-> Note: This deployment is currently populated with generated demo data (synthetic sales/orders over a 90-day period) for demonstration purposes. The system is designed to integrate real business data in production use.
+Small food businesses often run out of key ingredients unexpectedly, or over-order and waste stock, because there's no simple way to:
+1. Automatically deduct ingredient stock as orders come in, based on each product's recipe.
+2. Get warned before an ingredient actually runs out.
+3. Forecast future demand using real historical sales patterns rather than guesswork.
 
-## Overview
+This project addresses all three in one Streamlit application, backed by a relational SQLite schema and a properly evaluated forecasting pipeline.
 
-This project goes beyond a typical CRUD app — it integrates a **Prophet time-series forecasting model** directly into a live business tool, so demand predictions update dynamically as new sales data comes in. It's designed to simulate a real small-business use case: tracking inventory, managing recipes/ingredients, processing orders, and forecasting what to stock next.
+## Architecture
+
+```
+┌──────────────┐      ┌───────────────┐      ┌───────────────┐
+│  Inventory   │◄────►│    Recipes    │◄────►│    Orders     │
+│ (ingredients)│      │  (product BOM)│      │ (place order) │
+└──────┬───────┘      └───────────────┘      └───────┬───────┘
+       │                                              │
+       │ low-stock alerts                             │ deducts stock,
+       ▼                                              │ logs sales
+┌──────────────┐                              ┌───────▼───────┐
+│  Dashboard   │◄─────────────────────────────│     Sales     │
+│ (KPIs, charts)│                              │  (history)    │
+└──────────────┘                              └───────────────┘
+
+┌────────────────────────────────────────────────────────────┐
+│                     Forecast Pipeline                       │
+│ Real bakery transactions (Kaggle CSV)                        │
+│   → daily_product_demand → daily_product_demand_clean        │
+│   → Moving Average baseline vs Prophet vs XGBoost            │
+│   → RMSE / MAPE evaluation, feature-engineered inputs         │
+│   → cached trained models, live forecast + charts             │
+└────────────────────────────────────────────────────────────┘
+```
 
 ## Features
 
-- **🔐 Login System** — simple session-based authentication
-- **📊 Dashboard** — business analytics and KPIs at a glance
-- **📦 Inventory Management** — track stock levels, categories, units, and cost per item
-- **🍰 Recipe Management** — map products to the ingredients/quantities required to make them
-- **🧾 Order Processing** — record orders with pricing and timestamps
-- **📈 ML-Powered Demand Forecasting** — uses Facebook Prophet to predict next-day product demand from historical sales data, with trend detection (increasing/decreasing) and visual forecast plots
-- **🌓 Theme Toggle** — light/dark mode
-- **🗄️ Persistent Storage** — SQLite database with five relational tables (inventory, recipes, orders, sales, ingredient usage)
+- **Inventory management** — add/restock/delete ingredients with configurable reorder thresholds and automatic low-stock alerts.
+- **Recipe (BOM) management** — define ingredient requirements per product; view recipes individually per product or as a full list.
+- **Order processing** — placing an order automatically checks stock availability and deducts the correct ingredient quantities, logging revenue, cost, and profit.
+- **Analytics dashboard** — revenue/profit trends (daily & monthly), top products, revenue distribution, executive summary, and a live low-stock overview.
+- **Demand forecasting** — trained on real bakery transaction data (not synthetic), comparing a naive moving-average baseline against Prophet and XGBoost, with train/test split evaluation (RMSE, MAPE) and feature engineering (day-of-week, lag values, rolling averages, weekend flags).
+- **Self-seeding on first run** — a fresh deployment automatically builds demo sales data, imports the real demand dataset, and seeds starter ingredients/recipes with zero manual setup.
+
+## Model Evaluation
+
+Forecast accuracy is evaluated per-product on a held-out 30-day test split. Example (Bread):
+
+| Model           | RMSE | MAPE (%) |
+|-----------------|------|----------|
+| Moving Average  | 8.08 | 45.45    |
+| Prophet         | 4.69 | 26.34    |
+| XGBoost         | 6.03 | 30.98    |
+
+**Best performing model: Prophet** (RMSE 4.69) — outperforming the naive moving-average baseline by roughly 42% on RMSE and 42% on MAPE for this product.
 
 ## Tech Stack
 
-| Layer | Technology |
-|---|---|
-| Frontend/App | Streamlit |
-| Database | SQLite |
-| ML/Forecasting | Facebook Prophet |
-| Data Processing | Pandas |
-| Language | Python |
+Python, Streamlit, SQLite, Prophet, XGBoost, scikit-learn, Plotly, Matplotlib, Pandas
 
-## How the Forecasting Works
-
-The forecasting module (`ml_forecast.py`) pulls historical sales data per product from the SQLite database, aggregates it into daily demand counts, and fits a Prophet model to generate a next-day demand prediction. It compares the predicted value against the most recent actual demand to classify the trend as increasing or decreasing, then visualizes both the forecast and historical demand curve directly in the dashboard. This lets a business user see forward-looking demand estimates without needing any data science background — the model runs invisibly in the background of a normal business tool.
-
-## Database Design
-
-Five relational tables handle the full business logic:
-- `inventory` — raw stock items, quantities, and costs
-- `recipes` — links products to the ingredients/quantities needed to produce them
-- `orders` — customer orders with pricing and timestamps
-- `sales` — revenue, cost, and profit per sale (feeds the forecasting model)
-- `ingredient_usage` — tracks ingredient consumption over time
-
-## What I Learned
-
-- Integrating a real ML model (Prophet) into a live, interactive application rather than a static notebook
-- Designing a relational schema to support inventory, recipes, and sales as connected entities
-- Building a multi-page Streamlit app with session-state-based routing and authentication
-- Handling edge cases in time-series forecasting (e.g., insufficient historical data, missing dates)
-
-## Future Improvements
-
-- Replace demo login with proper authentication (hashed passwords, multi-user support)
-- Add automated ingredient reorder alerts based on forecasted demand
-- Extend forecasting to multi-day/weekly horizons with confidence intervals
-- Deploy with a hosted database (e.g., PostgreSQL) for production use
-
-## Run Locally
+## Setup
 
 ```bash
+git clone https://github.com/haneef333/smart-inventory-system.git
+cd smart-inventory-system
 pip install -r requirements.txt
 streamlit run app.py
 ```
 
----
-*Built as part of an end-to-end data science / ML portfolio project.*
+On first run, the app automatically builds the database, imports demo and real historical data, and seeds starter inventory/recipes — no manual setup required.
+
+## Live Demo
+
+https://smart-inventory-system-ecm5houyjzh2vim7cbefyd.streamlit.app/
