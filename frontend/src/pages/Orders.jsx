@@ -1,0 +1,129 @@
+import { useEffect, useState } from 'react'
+import { getProducts, getOrders, placeOrder } from '../api/client'
+import Panel from '../components/Panel'
+import TicketCard from '../components/TicketCard'
+import { input, label, field, buttonPrimary, table, th, td } from '../components/ui'
+
+export default function Orders() {
+  const [products, setProducts] = useState([])
+  const [orders, setOrders] = useState([])
+  const [form, setForm] = useState({ product_name: '', order_quantity: 1, selling_price: 0 })
+  const [result, setResult] = useState(null)
+  const [error, setError] = useState(null)
+  const [submitting, setSubmitting] = useState(false)
+
+  const load = () => {
+    getProducts().then(list => {
+      setProducts(list)
+      setForm(f => ({ ...f, product_name: f.product_name || list[0] || '' }))
+    })
+    getOrders().then(setOrders)
+  }
+
+  useEffect(() => { load() }, [])
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError(null); setResult(null); setSubmitting(true)
+    try {
+      const res = await placeOrder({
+        ...form,
+        order_quantity: Number(form.order_quantity),
+        selling_price: Number(form.selling_price),
+      })
+      setResult(res)
+      load()
+    } catch (err) {
+      const detail = err?.response?.data?.detail
+      setError(Array.isArray(detail) ? detail : [detail || 'Order failed.'])
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: 24 }}>
+        <h1 style={{ fontSize: 30 }}>Orders</h1>
+        <p style={{ color: 'var(--flour-dim)', marginTop: 6 }}>Place an order — stock is checked and deducted automatically</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, alignItems: 'start' }}>
+        <Panel title="Place order">
+          <form onSubmit={handleSubmit}>
+            <div style={field}>
+              <label style={label}>Product</label>
+              <select
+                style={input} value={form.product_name}
+                onChange={e => setForm(f => ({ ...f, product_name: e.target.value }))}
+              >
+                {products.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+            <div style={field}>
+              <label style={label}>Quantity ordered</label>
+              <input type="number" min="1" step="1" style={input} value={form.order_quantity}
+                onChange={e => setForm(f => ({ ...f, order_quantity: e.target.value }))} />
+            </div>
+            <div style={field}>
+              <label style={label}>Selling price (per unit)</label>
+              <input type="number" min="0" step="any" style={input} value={form.selling_price}
+                onChange={e => setForm(f => ({ ...f, selling_price: e.target.value }))} />
+            </div>
+            <button type="submit" disabled={submitting} style={{ ...buttonPrimary, width: '100%' }}>
+              {submitting ? 'Processing…' : 'Place order'}
+            </button>
+          </form>
+
+          {error && (
+            <div style={{ marginTop: 14, padding: 12, borderRadius: 8, background: 'rgba(193,80,58,0.1)', border: '1px solid rgba(193,80,58,0.35)' }}>
+              {error.map((e, i) => (
+                <div key={i} style={{ color: 'var(--jam)', fontSize: 12, marginBottom: 4 }}>{e}</div>
+              ))}
+            </div>
+          )}
+
+          {result && (
+            <div style={{ marginTop: 16, display: 'grid', gap: 10 }}>
+              <TicketCard eyebrow="Order processed" value={`✓ ${result.product_name}`} accent="sage" />
+              <div style={{ fontSize: 13, display: 'grid', gap: 6 }}>
+                <Row label="Total cost" value={`₹${result.total_cost.toFixed(2)}`} />
+                <Row label="Revenue" value={`₹${result.revenue.toFixed(2)}`} />
+                <Row label="Profit" value={`₹${result.profit.toFixed(2)}`} accent />
+              </div>
+            </div>
+          )}
+        </Panel>
+
+        <Panel title={`Order history (${orders.length})`}>
+          <div style={{ maxHeight: 560, overflowY: 'auto' }}>
+            <table style={table}>
+              <thead>
+                <tr>{['Product', 'Qty', 'Selling price', 'Date'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
+              </thead>
+              <tbody>
+                {orders.map(o => (
+                  <tr key={o.id}>
+                    <td style={td}>{o.product_name}</td>
+                    <td style={td} className="num">{o.quantity}</td>
+                    <td style={td} className="num">₹{o.selling_price}</td>
+                    <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.order_date}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
+      </div>
+    </div>
+  )
+}
+
+function Row({ label, value, accent }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+      <span style={{ color: 'var(--flour-dim)' }}>{label}</span>
+      <span className="num" style={{ color: accent ? 'var(--sage)' : 'var(--flour)' }}>{value}</span>
+    </div>
+  )
+}
