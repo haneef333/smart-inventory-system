@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Sidebar from './components/Sidebar'
+import BottomNav from './components/BottomNav'
 import Dashboard from './pages/Dashboard'
 import Inventory from './pages/Inventory'
 import Recipes from './pages/Recipes'
@@ -12,8 +13,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <div style={{ display: 'flex' }}>
-        <Sidebar />
-        <main style={{ flex: 1, padding: '28px 36px', maxWidth: 1280 }}>
+        <div className="desktop-sidebar">
+          <Sidebar />
+        </div>
+        <main className="app-main" style={{ flex: 1, padding: '28px 36px', maxWidth: 1280 }}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/inventory" element={<Inventory />} />
@@ -24,6 +27,7 @@ export default function App() {
             <Route path="/shopping-list" element={<ShoppingList />} />
           </Routes>
         </main>
+        <BottomNav />
       </div>
     </BrowserRouter>
   )
