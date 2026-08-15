@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database import init_schema
 from data_pipeline import run_startup_pipeline
-from routers import inventory, recipes, orders, dashboard, forecast
+from routers import inventory, recipes, orders, dashboard, forecast, expenses, shopping_list
 
 app = FastAPI(title="Smart Inventory System API")
 
@@ -32,3 +32,5 @@ app.include_router(recipes.router)
 app.include_router(orders.router)
 app.include_router(dashboard.router)
 app.include_router(forecast.router)
+app.include_router(expenses.router)
+app.include_router(shopping_list.router)

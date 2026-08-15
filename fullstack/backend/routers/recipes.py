@@ -51,27 +51,3 @@ def add_recipe_line(recipe: RecipeCreate):
     new_id = cursor.lastrowid
     conn.close()
     return {"id": new_id, **recipe.model_dump()}
-@router.delete("/{recipe_id}")
-def delete_recipe_line(recipe_id: int):
-    conn = get_connection()
-    cursor = conn.cursor()
-
-    row = cursor.execute(
-        "SELECT * FROM recipes WHERE id = ?",
-        (recipe_id,),
-    ).fetchone()
-
-    if row is None:
-        conn.close()
-        from fastapi import HTTPException
-        raise HTTPException(status_code=404, detail="Recipe line not found.")
-
-    cursor.execute(
-        "DELETE FROM recipes WHERE id = ?",
-        (recipe_id,),
-    )
-
-    conn.commit()
-    conn.close()
-
-    return {"message": "Recipe line deleted successfully."}

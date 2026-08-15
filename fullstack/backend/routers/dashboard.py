@@ -19,6 +19,58 @@ def _load_sales_df(conn):
     return df.dropna(subset=["sale_date"])
 
 
+def _load_expenses_df(conn, start_date=None, end_date=None):
+    df = pd.read_sql_query("SELECT * FROM expenses", conn)
+    if df.empty:
+        return df
+    df["expense_date"] = pd.to_datetime(df["expense_date"], errors="coerce")
+    df["amount"] = pd.to_numeric(df["amount"], errors="coerce").fillna(0)
+    df = df.dropna(subset=["expense_date"])
+    if start_date:
+        df = df[df["expense_date"].dt.date >= start_date]
+    if end_date:
+        df = df[df["expense_date"].dt.date <= end_date]
+    return df
+
+
+def _summarize_expenses(expenses_df):
+    if expenses_df.empty:
+        return {
+            "total_expenses": 0.0,
+            "by_category": [],
+            "monthly_expenses": [],
+            "recent_expenses": [],
+        }
+
+    total_expenses = float(expenses_df["amount"].sum())
+
+    by_category = (
+        expenses_df.groupby("category")["amount"].sum().reset_index()
+    )
+    by_category.columns = ["category", "amount"]
+    by_category = by_category.sort_values("amount", ascending=False)
+
+    monthly = (
+        expenses_df.groupby(expenses_df["expense_date"].dt.to_period("M"))["amount"]
+        .sum()
+        .reset_index()
+    )
+    monthly["expense_date"] = monthly["expense_date"].astype(str)
+    monthly.columns = ["month", "amount"]
+
+    recent = (
+        expenses_df.sort_values(by="expense_date", ascending=False).head(10).copy()
+    )
+    recent["expense_date"] = recent["expense_date"].astype(str)
+
+    return {
+        "total_expenses": round(total_expenses, 2),
+        "by_category": by_category.to_dict(orient="records"),
+        "monthly_expenses": monthly.to_dict(orient="records"),
+        "recent_expenses": recent[["description", "category", "amount", "expense_date"]].to_dict(orient="records"),
+    }
+
+
 @router.get("/meta")
 def dashboard_meta():
     """Min/max sale date and product list, for populating filter controls."""
@@ -45,10 +97,13 @@ def dashboard_summary(
     conn = get_connection()
     df = _load_sales_df(conn)
     inventory_df = pd.read_sql_query("SELECT * FROM inventory", conn)
+    expenses_df = _load_expenses_df(conn, start_date, end_date)
     conn.close()
 
+    expenses_summary = _summarize_expenses(expenses_df)
+
     if df.empty:
-        return {"empty": True}
+        return {"empty": True, "expenses": expenses_summary}
 
     if start_date:
         df = df[df["sale_date"].dt.date >= start_date]
@@ -58,7 +113,7 @@ def dashboard_summary(
         df = df[df["product_name"] == product]
 
     if df.empty:
-        return {"empty": True}
+        return {"empty": True, "expenses": expenses_summary}
 
     total_orders = len(df)
     total_revenue = float(df["revenue"].sum())
@@ -111,13 +166,18 @@ def dashboard_summary(
     )
     recent_sales["sale_date"] = recent_sales["sale_date"].astype(str)
 
+    net_profit = round(total_profit - expenses_summary["total_expenses"], 2)
+
     return {
         "empty": False,
         "kpis": {
             "total_orders": total_orders,
             "total_revenue": round(total_revenue, 2),
             "total_profit": round(total_profit, 2),
+            "total_expenses": expenses_summary["total_expenses"],
+            "net_profit": net_profit,
         },
+        "expenses": expenses_summary,
         "executive_summary": {
             "highest_revenue_product": highest_revenue_product,
             "highest_profit_product": highest_profit_product,

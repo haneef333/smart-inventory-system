@@ -17,10 +17,20 @@ export const getProducts = () => api.get('/recipes/products').then(r => r.data)
 export const getRecipe = (productName) =>
   api.get(`/recipes/${encodeURIComponent(productName)}`).then(r => r.data)
 export const addRecipeLine = (line) => api.post('/recipes', line).then(r => r.data)
-export const deleteRecipeLine = (id) =>
-  api.delete(`/recipes/${id}`).then(r => r.data)
+
 export const getOrders = () => api.get('/orders').then(r => r.data)
 export const placeOrder = (order) => api.post('/orders', order).then(r => r.data)
+export const updateOrderStatus = (id, update) =>
+  api.patch(`/orders/${id}/status`, update).then(r => r.data)
+
+export const getExpenses = () => api.get('/expenses').then(r => r.data)
+export const getExpenseCategories = () => api.get('/expenses/categories').then(r => r.data)
+export const addExpense = (expense) => api.post('/expenses', expense).then(r => r.data)
+export const deleteExpense = (id) => api.delete(`/expenses/${id}`).then(r => r.data)
+
+export const getLowStockList = () => api.get('/shopping-list/low-stock').then(r => r.data)
+export const generateShoppingList = (payload) =>
+  api.post('/shopping-list/generate', payload).then(r => r.data)
 
 export const getDashboardMeta = () => api.get('/dashboard/meta').then(r => r.data)
 export const getDashboardSummary = (params) =>

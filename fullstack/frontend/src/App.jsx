@@ -5,6 +5,8 @@ import Inventory from './pages/Inventory'
 import Recipes from './pages/Recipes'
 import Orders from './pages/Orders'
 import Forecast from './pages/Forecast'
+import Expenses from './pages/Expenses'
+import ShoppingList from './pages/ShoppingList'
 
 export default function App() {
   return (
@@ -18,6 +20,8 @@ export default function App() {
             <Route path="/recipes" element={<Recipes />} />
             <Route path="/orders" element={<Orders />} />
             <Route path="/forecast" element={<Forecast />} />
+            <Route path="/expenses" element={<Expenses />} />
+            <Route path="/shopping-list" element={<ShoppingList />} />
           </Routes>
         </main>
       </div>

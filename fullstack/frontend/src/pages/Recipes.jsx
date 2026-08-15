@@ -1,11 +1,5 @@
 import { useEffect, useState } from 'react'
-import {
-  getInventory,
-  getRecipes,
-  getProducts,
-  addRecipeLine,
-  deleteRecipeLine
-} from '../api/client'
+import { getInventory, getRecipes, getProducts, addRecipeLine } from '../api/client'
 import Panel from '../components/Panel'
 import { input, label, field, buttonPrimary, table, th, td } from '../components/ui'
 
@@ -16,15 +10,7 @@ export default function Recipes() {
   const [selectedProduct, setSelectedProduct] = useState('')
   const [form, setForm] = useState({ product_name: '', ingredient_name: '', quantity_needed: '', unit: '' })
   const [notice, setNotice] = useState('')
-async function handleDelete(id, productName, ingredientName) {
-  try {
-    await deleteRecipeLine(id)
-    setNotice(`${ingredientName} removed from ${productName}.`)
-    load()
-  } catch (err) {
-    setNotice('Failed to delete recipe line.')
-  }
-}
+
   const load = () => {
     getInventory().then(setIngredients)
     getRecipes().then(setAllRecipes)
@@ -143,47 +129,15 @@ async function handleDelete(id, productName, ingredientName) {
             <div style={{ maxHeight: 340, overflowY: 'auto' }}>
               <table style={table}>
                 <thead>
-                  <tr>
-                    {['Product', 'Ingredient', 'Quantity', 'Unit', ''].map(h => (
-                      <th key={h} style={th}>{h}</th>
-                    ))}
-                  </tr>               
+                  <tr>{['Product', 'Ingredient', 'Quantity', 'Unit'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
                 </thead>
                 <tbody>
                   {allRecipes.map((r) => (
                     <tr key={r.id}>
                       <td style={td}>{r.product_name}</td>
-
-                      <td style={{ ...td, color: 'var(--flour-dim)' }}>
-                        {r.ingredient_name}
-                      </td>
-
-                      <td style={td} className="num">
-                        {r.quantity_needed}
-                      </td>
-
-                      <td style={{ ...td, color: 'var(--flour-dim)' }}>
-                        {r.unit}
-                      </td>
-
-                      <td style={td}>
-                        <button
-                          style={{
-                            background: 'transparent',
-                            border: '1px solid var(--jam)',
-                            color: 'var(--jam)',
-                            borderRadius: 6,
-                            padding: '6px 10px',
-                            cursor: 'pointer',
-                            fontSize: 12
-                          }}
-                          onClick={() =>
-                            handleDelete(r.id, r.product_name, r.ingredient_name)
-                          }
-                        >
-                          Delete
-                        </button>
-                      </td>
+                      <td style={{ ...td, color: 'var(--flour-dim)' }}>{r.ingredient_name}</td>
+                      <td style={td} className="num">{r.quantity_needed}</td>
+                      <td style={{ ...td, color: 'var(--flour-dim)' }}>{r.unit}</td>
                     </tr>
                   ))}
                 </tbody>

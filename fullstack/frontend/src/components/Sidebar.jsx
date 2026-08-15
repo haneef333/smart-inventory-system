@@ -5,6 +5,8 @@ const NAV_ITEMS = [
   { to: '/inventory', label: 'Inventory', icon: '▤' },
   { to: '/recipes', label: 'Recipes', icon: '✎' },
   { to: '/orders', label: 'Orders', icon: '⌗' },
+  { to: '/shopping-list', label: 'Shopping list', icon: '🛒' },
+  { to: '/expenses', label: 'Expenses', icon: '₹' },
   { to: '/forecast', label: 'Forecast', icon: '↗' },
 ]
 

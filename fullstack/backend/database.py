@@ -56,7 +56,21 @@ def init_schema():
         product_name TEXT NOT NULL,
         quantity INTEGER,
         selling_price REAL,
-        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        customer_name TEXT,
+        due_date TEXT,
+        delivery_status TEXT DEFAULT 'pending',
+        payment_status TEXT DEFAULT 'unpaid'
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS expenses (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        description TEXT NOT NULL,
+        category TEXT NOT NULL,
+        amount REAL NOT NULL,
+        expense_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
@@ -81,4 +95,24 @@ def init_schema():
     """)
 
     conn.commit()
+    _migrate_orders_columns(cursor, conn)
     conn.close()
+
+
+def _migrate_orders_columns(cursor, conn):
+    """Add bakery-workflow columns to a pre-existing orders table, if missing."""
+    cursor.execute("PRAGMA table_info(orders)")
+    existing_cols = {row["name"] for row in cursor.fetchall()}
+
+    new_cols = {
+        "customer_name": "TEXT",
+        "due_date": "TEXT",
+        "delivery_status": "TEXT DEFAULT 'pending'",
+        "payment_status": "TEXT DEFAULT 'unpaid'",
+    }
+
+    for col_name, col_def in new_cols.items():
+        if col_name not in existing_cols:
+            cursor.execute(f"ALTER TABLE orders ADD COLUMN {col_name} {col_def}")
+
+    conn.commit()

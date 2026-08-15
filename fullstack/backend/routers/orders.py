@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 
 from database import get_connection
-from schemas import OrderCreate
+from schemas import OrderCreate, OrderStatusUpdate
 
 router = APIRouter(prefix="/api/orders", tags=["orders"])
 
@@ -90,10 +90,16 @@ def place_order(order: OrderCreate):
 
     cursor.execute(
         """
-        INSERT INTO orders (product_name, quantity, selling_price)
-        VALUES (?, ?, ?)
+        INSERT INTO orders (product_name, quantity, selling_price, customer_name, due_date)
+        VALUES (?, ?, ?, ?, ?)
         """,
-        (order.product_name, order.order_quantity, order.selling_price),
+        (
+            order.product_name,
+            order.order_quantity,
+            order.selling_price,
+            order.customer_name,
+            order.due_date,
+        ),
     )
 
     cursor.execute(
@@ -114,3 +120,28 @@ def place_order(order: OrderCreate):
         "revenue": round(revenue, 2),
         "profit": round(profit, 2),
     }
+
+
+@router.patch("/{order_id}/status")
+def update_order_status(order_id: int, update: OrderStatusUpdate):
+    conn = get_connection()
+    cursor = conn.cursor()
+
+    existing = cursor.execute(
+        "SELECT * FROM orders WHERE id = ?", (order_id,)
+    ).fetchone()
+    if existing is None:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Order not found.")
+
+    delivery_status = update.delivery_status or existing["delivery_status"]
+    payment_status = update.payment_status or existing["payment_status"]
+
+    cursor.execute(
+        "UPDATE orders SET delivery_status = ?, payment_status = ? WHERE id = ?",
+        (delivery_status, payment_status, order_id),
+    )
+    conn.commit()
+    conn.close()
+
+    return {"id": order_id, "delivery_status": delivery_status, "payment_status": payment_status}

@@ -85,12 +85,14 @@ export default function Dashboard() {
         <>
           <div style={styles.kpiRow}>
             <TicketCard eyebrow="Total revenue" value={money(summary.kpis.total_revenue)} accent="amber" />
-            <TicketCard eyebrow="Total profit" value={money(summary.kpis.total_profit)} accent="sage" />
-            <TicketCard eyebrow="Total orders" value={summary.kpis.total_orders} accent="butter" />
+            <TicketCard eyebrow="Gross profit" value={money(summary.kpis.total_profit)} accent="sage" />
+            <TicketCard eyebrow="Expenses" value={money(summary.kpis.total_expenses)} accent="jam" />
+            <TicketCard eyebrow="Net profit" value={money(summary.kpis.net_profit)} accent="butter" />
           </div>
 
           <div style={styles.twoCol}>
             <Panel title="Highlights">
+              <SummaryLine label="Total orders" value={summary.kpis.total_orders} />
               <SummaryLine label="Highest revenue product" value={summary.executive_summary.highest_revenue_product} />
               <SummaryLine label="Highest profit product" value={summary.executive_summary.highest_profit_product} />
               <SummaryLine label="Average order value" value={money(summary.executive_summary.average_order_value)} />
@@ -164,6 +166,40 @@ export default function Dashboard() {
               </LineChart>
             </ResponsiveContainer>
           </Panel>
+
+          {summary.expenses.total_expenses > 0 && (
+            <div style={styles.twoCol}>
+              <Panel title="Expenses by category">
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <Pie
+                      data={summary.expenses.by_category}
+                      dataKey="amount" nameKey="category"
+                      innerRadius={55} outerRadius={90}
+                    >
+                      {summary.expenses.by_category.map((_, i) => (
+                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </Panel>
+
+              <Panel title="Monthly expenses">
+                <ResponsiveContainer width="100%" height={240}>
+                  <BarChart data={summary.expenses.monthly_expenses}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--panel-border)" />
+                    <XAxis dataKey="month" tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} />
+                    <YAxis tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Bar dataKey="amount" fill="#c1503a" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </Panel>
+            </div>
+          )}
 
           <div style={styles.twoCol}>
             <Panel title="Top products">
@@ -263,6 +299,6 @@ const tooltipStyle = {
 
 const styles = {
   filterRow: { display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' },
-  kpiRow: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 },
+  kpiRow: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 },
   twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 },
 }

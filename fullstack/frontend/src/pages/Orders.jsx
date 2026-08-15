@@ -1,13 +1,19 @@
 import { useEffect, useState } from 'react'
-import { getProducts, getOrders, placeOrder } from '../api/client'
+import { getProducts, getOrders, placeOrder, updateOrderStatus } from '../api/client'
 import Panel from '../components/Panel'
 import TicketCard from '../components/TicketCard'
-import { input, label, field, buttonPrimary, table, th, td } from '../components/ui'
+import { input, label, field, buttonPrimary, table, th, td, badge } from '../components/ui'
+
+const DELIVERY_COLORS = { pending: '#e8c468', delivered: '#7c9473', cancelled: '#c1503a' }
+const PAYMENT_COLORS = { unpaid: '#c1503a', paid: '#7c9473' }
 
 export default function Orders() {
   const [products, setProducts] = useState([])
   const [orders, setOrders] = useState([])
-  const [form, setForm] = useState({ product_name: '', order_quantity: 1, selling_price: 0 })
+  const [form, setForm] = useState({
+    product_name: '', order_quantity: 1, selling_price: 0,
+    customer_name: '', due_date: '',
+  })
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
   const [submitting, setSubmitting] = useState(false)
@@ -30,6 +36,8 @@ export default function Orders() {
         ...form,
         order_quantity: Number(form.order_quantity),
         selling_price: Number(form.selling_price),
+        customer_name: form.customer_name || null,
+        due_date: form.due_date || null,
       })
       setResult(res)
       load()
@@ -39,6 +47,19 @@ export default function Orders() {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  async function cycleDeliveryStatus(o) {
+    const next = o.delivery_status === 'pending' ? 'delivered'
+      : o.delivery_status === 'delivered' ? 'cancelled' : 'pending'
+    await updateOrderStatus(o.id, { delivery_status: next })
+    load()
+  }
+
+  async function togglePaymentStatus(o) {
+    const next = o.payment_status === 'unpaid' ? 'paid' : 'unpaid'
+    await updateOrderStatus(o.id, { payment_status: next })
+    load()
   }
 
   return (
@@ -70,6 +91,16 @@ export default function Orders() {
               <input type="number" min="0" step="any" style={input} value={form.selling_price}
                 onChange={e => setForm(f => ({ ...f, selling_price: e.target.value }))} />
             </div>
+            <div style={field}>
+              <label style={label}>Customer name (optional)</label>
+              <input type="text" style={input} value={form.customer_name}
+                onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))} />
+            </div>
+            <div style={field}>
+              <label style={label}>Due date (optional)</label>
+              <input type="date" style={input} value={form.due_date}
+                onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
+            </div>
             <button type="submit" disabled={submitting} style={{ ...buttonPrimary, width: '100%' }}>
               {submitting ? 'Processing…' : 'Place order'}
             </button>
@@ -99,7 +130,7 @@ export default function Orders() {
           <div style={{ maxHeight: 560, overflowY: 'auto' }}>
             <table style={table}>
               <thead>
-                <tr>{['Product', 'Qty', 'Selling price', 'Date'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
+                <tr>{['Product', 'Qty', 'Price', 'Customer', 'Due', 'Delivery', 'Payment', 'Date'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {orders.map(o => (
@@ -107,6 +138,26 @@ export default function Orders() {
                     <td style={td}>{o.product_name}</td>
                     <td style={td} className="num">{o.quantity}</td>
                     <td style={td} className="num">₹{o.selling_price}</td>
+                    <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.customer_name || '—'}</td>
+                    <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.due_date || '—'}</td>
+                    <td style={td}>
+                      <span
+                        style={{ ...badge(DELIVERY_COLORS[o.delivery_status] || '#e8c468'), cursor: 'pointer' }}
+                        title="Click to change"
+                        onClick={() => cycleDeliveryStatus(o)}
+                      >
+                        {o.delivery_status}
+                      </span>
+                    </td>
+                    <td style={td}>
+                      <span
+                        style={{ ...badge(PAYMENT_COLORS[o.payment_status] || '#c1503a'), cursor: 'pointer' }}
+                        title="Click to change"
+                        onClick={() => togglePaymentStatus(o)}
+                      >
+                        {o.payment_status}
+                      </span>
+                    </td>
                     <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.order_date}</td>
                   </tr>
                 ))}

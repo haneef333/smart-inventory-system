@@ -26,3 +26,26 @@ class OrderCreate(BaseModel):
     product_name: str
     order_quantity: int
     selling_price: float
+    customer_name: Optional[str] = None
+    due_date: Optional[str] = None
+
+
+class OrderStatusUpdate(BaseModel):
+    delivery_status: Optional[str] = None
+    payment_status: Optional[str] = None
+
+
+class ExpenseCreate(BaseModel):
+    description: str
+    category: str
+    amount: float
+
+
+class ShoppingListItem(BaseModel):
+    product_name: str
+    quantity: int
+
+
+class ShoppingListRequest(BaseModel):
+    items: list[ShoppingListItem] = []
+    include_low_stock: bool = True
