@@ -39,3 +39,9 @@ export const getDashboardSummary = (params) =>
 export const getForecastProducts = () => api.get('/forecast/products').then(r => r.data)
 export const getForecast = (productName) =>
   api.get(`/forecast/${encodeURIComponent(productName)}`).then(r => r.data)
+
+export const getTasksForMonth = (month) => api.get('/tasks', { params: { month } }).then(r => r.data)
+export const getTasksForDate = (date) => api.get('/tasks', { params: { date } }).then(r => r.data)
+export const addTask = (task) => api.post('/tasks', task).then(r => r.data)
+export const updateTask = (id, update) => api.patch(`/tasks/${id}`, update).then(r => r.data)
+export const deleteTask = (id) => api.delete(`/tasks/${id}`).then(r => r.data)
