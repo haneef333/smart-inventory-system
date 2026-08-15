@@ -96,3 +96,66 @@ h1, h2, h3, h4 {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
+
+/* --- Bottom tab nav (mobile only) --- */
+.bottom-nav {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .desktop-sidebar {
+    display: none !important;
+  }
+
+  .app-main {
+    padding: 16px 16px 90px 16px !important;
+    max-width: 100% !important;
+  }
+
+  .bottom-nav {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    background: var(--panel);
+    border-top: 1px solid var(--panel-border);
+    padding: 8px 6px calc(8px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .bottom-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    text-decoration: none;
+    color: var(--flour-dim);
+    font-size: 10px;
+    padding: 6px 2px;
+    border-radius: 10px;
+  }
+
+  .bottom-nav-icon {
+    font-size: 18px;
+    line-height: 1;
+  }
+
+  .bottom-nav-item.active {
+    color: var(--flour);
+  }
+
+  .bottom-nav-item.home {
+    background: var(--amber);
+    color: var(--charcoal);
+    border-radius: 12px;
+    margin-top: -14px;
+    padding-top: 10px;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  }
+
+  .bottom-nav-item.home.active {
+    color: var(--charcoal);
+  }
+}
