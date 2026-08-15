@@ -6,6 +6,7 @@ import {
 import { getDashboardMeta, getDashboardSummary } from '../api/client'
 import TicketCard from '../components/TicketCard'
 import Panel from '../components/Panel'
+import TaskCalendar from '../components/TaskCalendar'
 import { input, label, field } from '../components/ui'
 
 const PIE_COLORS = ['#c17a3d', '#7c9473', '#c1503a', '#e8c468', '#8f6fae', '#4f8fa8', '#b8875a', '#5c8f6d']
@@ -45,6 +46,10 @@ export default function Dashboard() {
   return (
     <div>
       <PageHeader title="Dashboard" subtitle="Revenue, profit, and stock at a glance" />
+
+      <div style={{ marginBottom: 20 }}>
+        <TaskCalendar />
+      </div>
 
       <div style={styles.filterRow}>
         <div style={{ ...field, width: 160, marginBottom: 0 }}>
