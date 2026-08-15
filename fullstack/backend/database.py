@@ -94,6 +94,16 @@ def init_schema():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        task_date TEXT NOT NULL,
+        title TEXT NOT NULL,
+        is_done INTEGER DEFAULT 0,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     conn.commit()
     _migrate_orders_columns(cursor, conn)
     conn.close()
