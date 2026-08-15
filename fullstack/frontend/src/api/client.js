@@ -17,7 +17,8 @@ export const getProducts = () => api.get('/recipes/products').then(r => r.data)
 export const getRecipe = (productName) =>
   api.get(`/recipes/${encodeURIComponent(productName)}`).then(r => r.data)
 export const addRecipeLine = (line) => api.post('/recipes', line).then(r => r.data)
-
+export const deleteRecipeLine = (id) =>
+  api.delete(`/recipes/${id}`).then(r => r.data)
 export const getOrders = () => api.get('/orders').then(r => r.data)
 export const placeOrder = (order) => api.post('/orders', order).then(r => r.data)
 
