@@ -49,3 +49,13 @@ class ShoppingListItem(BaseModel):
 class ShoppingListRequest(BaseModel):
     items: list[ShoppingListItem] = []
     include_low_stock: bool = True
+
+
+class TaskCreate(BaseModel):
+    task_date: str  # 'YYYY-MM-DD'
+    title: str
+
+
+class TaskUpdate(BaseModel):
+    is_done: Optional[bool] = None
+    title: Optional[str] = None
