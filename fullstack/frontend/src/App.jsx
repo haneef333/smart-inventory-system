@@ -8,6 +8,7 @@ import Orders from './pages/Orders'
 import Forecast from './pages/Forecast'
 import Expenses from './pages/Expenses'
 import ShoppingList from './pages/ShoppingList'
+import Portfolio from './pages/Portfolio'
 
 export default function App() {
   return (
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/forecast" element={<Forecast />} />
             <Route path="/expenses" element={<Expenses />} />
             <Route path="/shopping-list" element={<ShoppingList />} />
+            <Route path="/portfolio" element={<Portfolio />} />
           </Routes>
         </main>
         <BottomNav />
