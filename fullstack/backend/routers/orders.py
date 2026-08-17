@@ -90,8 +90,8 @@ def place_order(order: OrderCreate):
 
     cursor.execute(
         """
-        INSERT INTO orders (product_name, quantity, selling_price, customer_name, due_date)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO orders (product_name, quantity, selling_price, customer_name, due_date, payment_method)
+        VALUES (?, ?, ?, ?, ?, ?)
         """,
         (
             order.product_name,
@@ -99,6 +99,7 @@ def place_order(order: OrderCreate):
             order.selling_price,
             order.customer_name,
             order.due_date,
+            order.payment_method,
         ),
     )
 
