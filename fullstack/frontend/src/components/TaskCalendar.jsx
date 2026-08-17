@@ -80,31 +80,33 @@ export default function TaskCalendar() {
         </div>
       }
     >
-      <div style={grid.weekdays}>
-        {WEEKDAYS.map(w => <div key={w} style={grid.weekdayLabel}>{w}</div>)}
-      </div>
-      <div style={grid.grid}>
-        {cells.map((d, i) => {
-          if (d === null) return <div key={i} />
-          const dateStr = `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}-${pad(d)}`
-          const isSelected = dateStr === selectedDate
-          const hasTask = daysWithTasks.has(dateStr)
-          const isToday = dateStr === toISODate(today)
-          return (
-            <button
-              key={i}
-              onClick={() => setSelectedDate(dateStr)}
-              style={{
-                ...grid.day,
-                ...(isSelected ? grid.daySelected : {}),
-                ...(isToday && !isSelected ? grid.dayToday : {}),
-              }}
-            >
-              {d}
-              {hasTask && <span style={grid.dot} />}
-            </button>
-          )
-        })}
+      <div style={{ maxWidth: 360, margin: '0 auto' }}>
+        <div style={grid.weekdays}>
+          {WEEKDAYS.map(w => <div key={w} style={grid.weekdayLabel}>{w}</div>)}
+        </div>
+        <div style={grid.grid}>
+          {cells.map((d, i) => {
+            if (d === null) return <div key={i} />
+            const dateStr = `${cursor.getFullYear()}-${pad(cursor.getMonth() + 1)}-${pad(d)}`
+            const isSelected = dateStr === selectedDate
+            const hasTask = daysWithTasks.has(dateStr)
+            const isToday = dateStr === toISODate(today)
+            return (
+              <button
+                key={i}
+                onClick={() => setSelectedDate(dateStr)}
+                style={{
+                  ...grid.day,
+                  ...(isSelected ? grid.daySelected : {}),
+                  ...(isToday && !isSelected ? grid.dayToday : {}),
+                }}
+              >
+                {d}
+                {hasTask && <span style={grid.dot} />}
+              </button>
+            )
+          })}
+        </div>
       </div>
 
       <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--panel-border)' }}>
@@ -165,7 +167,7 @@ const grid = {
     color: 'var(--flour)',
     borderRadius: 8,
     cursor: 'pointer',
-    fontSize: 13,
+    fontSize: 12,
   },
   daySelected: {
     background: 'var(--amber)',
@@ -177,11 +179,11 @@ const grid = {
   },
   dot: {
     position: 'absolute',
-    bottom: 4,
+    bottom: 3,
     left: '50%',
     transform: 'translateX(-50%)',
-    width: 4,
-    height: 4,
+    width: 3,
+    height: 3,
     borderRadius: '50%',
     background: 'var(--jam)',
   },
