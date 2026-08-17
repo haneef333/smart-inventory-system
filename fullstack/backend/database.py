@@ -128,6 +128,7 @@ def _migrate_orders_columns(cursor, conn):
         "due_date": "TEXT",
         "delivery_status": "TEXT DEFAULT 'pending'",
         "payment_status": "TEXT DEFAULT 'unpaid'",
+        "payment_method": "TEXT DEFAULT 'cash'",
     }
 
     for col_name, col_def in new_cols.items():
