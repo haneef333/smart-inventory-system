@@ -28,6 +28,7 @@ class OrderCreate(BaseModel):
     selling_price: float
     customer_name: Optional[str] = None
     due_date: Optional[str] = None
+    payment_method: str = "cash"  # "cash" or "online"
 
 
 class OrderStatusUpdate(BaseModel):
