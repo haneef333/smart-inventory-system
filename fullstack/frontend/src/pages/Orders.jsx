@@ -12,7 +12,7 @@ export default function Orders() {
   const [orders, setOrders] = useState([])
   const [form, setForm] = useState({
     product_name: '', order_quantity: 1, selling_price: 0,
-    customer_name: '', due_date: '',
+    customer_name: '', due_date: '', payment_method: 'cash',
   })
   const [result, setResult] = useState(null)
   const [error, setError] = useState(null)
@@ -62,11 +62,24 @@ export default function Orders() {
     load()
   }
 
+  const cashTotal = orders
+    .filter(o => (o.payment_method || 'cash') === 'cash')
+    .reduce((sum, o) => sum + o.selling_price * o.quantity, 0)
+  const onlineTotal = orders
+    .filter(o => o.payment_method === 'online')
+    .reduce((sum, o) => sum + o.selling_price * o.quantity, 0)
+
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
         <h1 style={{ fontSize: 30 }}>Orders</h1>
         <p style={{ color: 'var(--flour-dim)', marginTop: 6 }}>Place an order — stock is checked and deducted automatically</p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+        <TicketCard eyebrow="Total orders amount" value={`₹${(cashTotal + onlineTotal).toFixed(0)}`} accent="amber" />
+        <TicketCard eyebrow="Cash" value={`₹${cashTotal.toFixed(0)}`} accent="sage" />
+        <TicketCard eyebrow="Online" value={`₹${onlineTotal.toFixed(0)}`} accent="butter" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, alignItems: 'start' }}>
@@ -101,6 +114,16 @@ export default function Orders() {
               <input type="date" style={input} value={form.due_date}
                 onChange={e => setForm(f => ({ ...f, due_date: e.target.value }))} />
             </div>
+            <div style={field}>
+              <label style={label}>Payment method</label>
+              <select
+                style={input} value={form.payment_method}
+                onChange={e => setForm(f => ({ ...f, payment_method: e.target.value }))}
+              >
+                <option value="cash">Cash</option>
+                <option value="online">Online</option>
+              </select>
+            </div>
             <button type="submit" disabled={submitting} style={{ ...buttonPrimary, width: '100%' }}>
               {submitting ? 'Processing…' : 'Place order'}
             </button>
@@ -130,7 +153,7 @@ export default function Orders() {
           <div style={{ maxHeight: 560, overflowY: 'auto' }}>
             <table style={table}>
               <thead>
-                <tr>{['Product', 'Qty', 'Price', 'Customer', 'Due', 'Delivery', 'Payment', 'Date'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
+                <tr>{['Product', 'Qty', 'Price', 'Customer', 'Due', 'Method', 'Delivery', 'Payment', 'Date'].map(h => <th key={h} style={th}>{h}</th>)}</tr>
               </thead>
               <tbody>
                 {orders.map(o => (
@@ -140,6 +163,11 @@ export default function Orders() {
                     <td style={td} className="num">₹{o.selling_price}</td>
                     <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.customer_name || '—'}</td>
                     <td style={{ ...td, color: 'var(--flour-dim)' }}>{o.due_date || '—'}</td>
+                    <td style={td}>
+                      <span style={badge(o.payment_method === 'online' ? '#4f8fa8' : '#7c9473')}>
+                        {o.payment_method || 'cash'}
+                      </span>
+                    </td>
                     <td style={td}>
                       <span
                         style={{ ...badge(DELIVERY_COLORS[o.delivery_status] || '#e8c468'), cursor: 'pointer' }}
