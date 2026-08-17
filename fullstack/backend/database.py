@@ -104,6 +104,15 @@ def init_schema():
     )
     """)
 
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS portfolio_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT NOT NULL,
+        image_filename TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
     conn.commit()
     _migrate_orders_columns(cursor, conn)
     conn.close()
