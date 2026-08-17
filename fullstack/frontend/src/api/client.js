@@ -45,3 +45,15 @@ export const getTasksForDate = (date) => api.get('/tasks', { params: { date } })
 export const addTask = (task) => api.post('/tasks', task).then(r => r.data)
 export const updateTask = (id, update) => api.patch(`/tasks/${id}`, update).then(r => r.data)
 export const deleteTask = (id) => api.delete(`/tasks/${id}`).then(r => r.data)
+
+export const getPortfolioItems = () => api.get('/portfolio').then(r => r.data)
+export const addPortfolioItem = (title, file) => {
+  const formData = new FormData()
+  formData.append('title', title)
+  formData.append('image', file)
+  return api.post('/portfolio', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  }).then(r => r.data)
+}
+export const deletePortfolioItem = (id) => api.delete(`/portfolio/${id}`).then(r => r.data)
+export const portfolioImageUrl = (filename) => `${api.defaults.baseURL.replace(/\/api$/, '')}/uploads/portfolio/${filename}`
