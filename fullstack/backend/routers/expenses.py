@@ -9,7 +9,7 @@ router = APIRouter(prefix="/api/expenses", tags=["expenses"])
 # this list to populate the category dropdown, but the field accepts any
 # free-text value too.
 CATEGORIES = [
-    "Ingredients",
+    "Raw Material",
     "Packaging",
     "Equipment & Tools",
     "Delivery & Logistics",
