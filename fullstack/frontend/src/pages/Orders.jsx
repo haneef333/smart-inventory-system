@@ -68,6 +68,8 @@ export default function Orders() {
   const onlineTotal = orders
     .filter(o => o.payment_method === 'online')
     .reduce((sum, o) => sum + o.selling_price * o.quantity, 0)
+  const pendingCount = orders.filter(o => (o.delivery_status || 'pending') === 'pending').length
+  const completedCount = orders.filter(o => o.delivery_status === 'delivered').length
 
   return (
     <div>
@@ -76,10 +78,15 @@ export default function Orders() {
         <p style={{ color: 'var(--flour-dim)', marginTop: 6 }}>Place an order — stock is checked and deducted automatically</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 20 }}>
+      <div style={{ marginBottom: 16 }}>
         <TicketCard eyebrow="Total orders amount" value={`₹${(cashTotal + onlineTotal).toFixed(0)}`} accent="amber" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 }}>
         <TicketCard eyebrow="Cash" value={`₹${cashTotal.toFixed(0)}`} accent="sage" />
         <TicketCard eyebrow="Online" value={`₹${onlineTotal.toFixed(0)}`} accent="butter" />
+        <TicketCard eyebrow="Pending orders" value={pendingCount} accent="jam" />
+        <TicketCard eyebrow="Completed orders" value={completedCount} accent="sage" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, alignItems: 'start' }}>
