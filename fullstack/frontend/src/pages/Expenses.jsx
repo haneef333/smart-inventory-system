@@ -9,7 +9,7 @@ function money(n) {
 }
 
 const CATEGORY_COLORS = {
-  'Ingredients': '#c17a3d',
+  'Raw Material': '#c17a3d',
   'Packaging': '#e8c468',
   'Equipment & Tools': '#8f6fae',
   'Delivery & Logistics': '#4f8fa8',
@@ -69,6 +69,13 @@ export default function Expenses() {
     return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear()
   }).reduce((sum, e) => sum + e.amount, 0)
 
+  const rawMaterialTotal = expenses
+    .filter(e => e.category === 'Raw Material')
+    .reduce((sum, e) => sum + e.amount, 0)
+  const packagingTotal = expenses
+    .filter(e => e.category === 'Packaging')
+    .reduce((sum, e) => sum + e.amount, 0)
+
   return (
     <div>
       <div style={{ marginBottom: 24 }}>
@@ -76,9 +83,14 @@ export default function Expenses() {
         <p style={{ color: 'var(--flour-dim)', marginTop: 6 }}>Track ingredient, packaging, and running costs</p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 16 }}>
         <TicketCard eyebrow="Total expenses" value={money(total)} accent="jam" />
         <TicketCard eyebrow="This month" value={money(thisMonth)} accent="amber" />
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16, marginBottom: 20 }}>
+        <TicketCard eyebrow="Raw material" value={money(rawMaterialTotal)} accent="sage" />
+        <TicketCard eyebrow="Packaging" value={money(packagingTotal)} accent="butter" />
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '340px 1fr', gap: 20, alignItems: 'start' }}>
