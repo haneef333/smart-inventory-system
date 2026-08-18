@@ -3,7 +3,7 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from 'recharts'
-import { getDashboardMeta, getDashboardSummary } from '../api/client'
+import { getDashboardMeta, getDashboardSummary, getOrders, getExpenses } from '../api/client'
 import TicketCard from '../components/TicketCard'
 import Panel from '../components/Panel'
 import TaskCalendar from '../components/TaskCalendar'
@@ -20,6 +20,13 @@ export default function Dashboard() {
   const [filters, setFilters] = useState({ start_date: '', end_date: '', product: 'All' })
   const [summary, setSummary] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [recentOrders, setRecentOrders] = useState([])
+  const [recentExpenses, setRecentExpenses] = useState([])
+
+  useEffect(() => {
+    getOrders().then(rows => setRecentOrders(rows.slice(0, 5)))
+    getExpenses().then(rows => setRecentExpenses(rows.slice(0, 5)))
+  }, [])
 
   useEffect(() => {
     getDashboardMeta().then(m => {
@@ -47,8 +54,26 @@ export default function Dashboard() {
     <div>
       <PageHeader title="Dashboard" subtitle="Revenue, profit, and stock at a glance" />
 
+      {!loading && summary && !summary.empty && (
+        <div style={styles.kpiRow}>
+          <TicketCard eyebrow="Total profit" value={money(summary.kpis.total_profit)} accent="sage" />
+          <TicketCard eyebrow="Completed sales" value={summary.kpis.total_orders} accent="butter" />
+          <TicketCard eyebrow="Total sales" value={money(summary.kpis.total_revenue)} accent="amber" />
+          <TicketCard eyebrow="Total expenses" value={money(summary.kpis.total_expenses)} accent="jam" />
+        </div>
+      )}
+
       <div style={{ marginBottom: 20 }}>
         <TaskCalendar />
+      </div>
+
+      <div style={styles.twoCol}>
+        <Panel title="Recent orders">
+          <RecentOrdersList rows={recentOrders} />
+        </Panel>
+        <Panel title="Recent expenses">
+          <RecentExpensesList rows={recentExpenses} />
+        </Panel>
       </div>
 
       <div style={styles.filterRow}>
@@ -88,20 +113,13 @@ export default function Dashboard() {
 
       {!loading && summary && !summary.empty && (
         <>
-          <div style={styles.kpiRow}>
-            <TicketCard eyebrow="Total revenue" value={money(summary.kpis.total_revenue)} accent="amber" />
-            <TicketCard eyebrow="Gross profit" value={money(summary.kpis.total_profit)} accent="sage" />
-            <TicketCard eyebrow="Expenses" value={money(summary.kpis.total_expenses)} accent="jam" />
-            <TicketCard eyebrow="Net profit" value={money(summary.kpis.net_profit)} accent="butter" />
-          </div>
-
           <div style={styles.twoCol}>
             <Panel title="Highlights">
               <SummaryLine label="Total orders" value={summary.kpis.total_orders} />
+              <SummaryLine label="Net profit" value={money(summary.kpis.net_profit)} />
               <SummaryLine label="Highest revenue product" value={summary.executive_summary.highest_revenue_product} />
               <SummaryLine label="Highest profit product" value={summary.executive_summary.highest_profit_product} />
-              <SummaryLine label="Average order value" value={money(summary.executive_summary.average_order_value)} />
-              <SummaryLine label="Products in inventory" value={summary.executive_summary.total_products} last />
+              <SummaryLine label="Average order value" value={money(summary.executive_summary.average_order_value)} last />
             </Panel>
 
             <Panel title="Inventory overview">
@@ -293,6 +311,57 @@ function RecentSalesTable({ rows }) {
       </table>
     </div>
   )
+}
+
+function RecentOrdersList({ rows }) {
+  if (rows.length === 0) {
+    return <div style={{ color: 'var(--flour-dim)', fontSize: 13 }}>No recent orders.</div>
+  }
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {rows.map(o => (
+        <div key={o.id} style={listRow.row}>
+          <div>
+            <div style={{ fontSize: 13 }}>{o.product_name}</div>
+            <div style={{ fontSize: 11, color: 'var(--flour-dim)' }}>{o.quantity} units · {o.order_date}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div className="num" style={{ fontSize: 13 }}>{money(o.selling_price * o.quantity)}</div>
+            <div style={{ fontSize: 11, color: 'var(--flour-dim)', textTransform: 'capitalize' }}>{o.delivery_status || 'pending'}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function RecentExpensesList({ rows }) {
+  if (rows.length === 0) {
+    return <div style={{ color: 'var(--flour-dim)', fontSize: 13 }}>Your expenses will appear here.</div>
+  }
+  return (
+    <div style={{ display: 'grid', gap: 10 }}>
+      {rows.map(e => (
+        <div key={e.id} style={listRow.row}>
+          <div>
+            <div style={{ fontSize: 13 }}>{e.description}</div>
+            <div style={{ fontSize: 11, color: 'var(--flour-dim)' }}>{e.category} · {e.expense_date}</div>
+          </div>
+          <div className="num" style={{ fontSize: 13, color: 'var(--jam)' }}>{money(e.amount)}</div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const listRow = {
+  row: {
+    display: 'flex',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: '8px 0',
+    borderBottom: '1px dashed var(--panel-border)',
+  },
 }
 
 const tooltipStyle = {
