@@ -1,3 +1,4 @@
+// Local dev proxy config — production uses VITE_API_URL instead (see api/client.js)
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
