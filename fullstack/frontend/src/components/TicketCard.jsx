@@ -1,6 +1,14 @@
+import { useReveal } from '../hooks/useReveal'
+
 export default function TicketCard({ eyebrow, value, accent }) {
+  const [ref, visible] = useReveal()
+
   return (
-    <div style={{ ...cardStyle, borderTop: `3px solid var(--${accent})` }}>
+    <div
+      ref={ref}
+      className={`reveal ticket-card${visible ? ' reveal-in' : ''}`}
+      style={{ ...cardStyle, borderTop: `3px solid var(--${accent})` }}
+    >
       <div style={eyebrowStyle}>{eyebrow}</div>
       <div className="num" style={valueStyle}>{value}</div>
     </div>
