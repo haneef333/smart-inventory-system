@@ -1,6 +1,14 @@
+import { useReveal } from '../hooks/useReveal'
+
 export default function Panel({ title, action, children, style }) {
+  const [ref, visible] = useReveal()
+
   return (
-    <section style={{ ...panelStyle, ...style }}>
+    <section
+      ref={ref}
+      className={`reveal panel${visible ? ' reveal-in' : ''}`}
+      style={{ ...panelStyle, ...style }}
+    >
       {(title || action) && (
         <div style={headerStyle}>
           {title && <h3 style={titleStyle}>{title}</h3>}
