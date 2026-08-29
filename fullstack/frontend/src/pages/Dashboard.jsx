@@ -113,7 +113,7 @@ export default function Dashboard() {
 
       {!loading && summary && !summary.empty && (
         <>
-          <div style={styles.twoCol}>
+          <div className="two-col">
             <Panel title="Highlights">
               <SummaryLine label="Total orders" value={summary.kpis.total_orders} />
               <SummaryLine label="Net profit" value={money(summary.kpis.net_profit)} />
@@ -144,7 +144,7 @@ export default function Dashboard() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--panel-border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} minTickGap={30} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} minTickGap={50} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Area type="monotone" dataKey="revenue" stroke="#c17a3d" fill="url(#revFill)" strokeWidth={2} />
@@ -152,7 +152,7 @@ export default function Dashboard() {
             </ResponsiveContainer>
           </Panel>
 
-          <div style={styles.twoCol}>
+          <div className="two-col">
             <Panel title="Monthly revenue">
               <ResponsiveContainer width="100%" height={240}>
                 <BarChart data={summary.charts.monthly_revenue}>
@@ -182,7 +182,7 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={240}>
               <LineChart data={summary.charts.daily_profit}>
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--panel-border)" />
-                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} minTickGap={30} />
+                <XAxis dataKey="date" tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} minTickGap={50} />
                 <YAxis tick={{ fontSize: 11, fill: 'var(--flour-dim)' }} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Line type="monotone" dataKey="profit" stroke="#7c9473" strokeWidth={2} dot={false} />
@@ -191,7 +191,7 @@ export default function Dashboard() {
           </Panel>
 
           {summary.expenses.total_expenses > 0 && (
-            <div style={styles.twoCol}>
+            <div className="two-col">
               <Panel title="Expenses by category">
                 <ResponsiveContainer width="100%" height={240}>
                   <PieChart>
@@ -224,7 +224,7 @@ export default function Dashboard() {
             </div>
           )}
 
-          <div style={styles.twoCol}>
+          <div className="two-col">
             <Panel title="Top products">
               <ResponsiveContainer width="100%" height={260}>
                 <BarChart data={summary.charts.top_products} layout="vertical">
@@ -373,6 +373,4 @@ const tooltipStyle = {
 
 const styles = {
   filterRow: { display: 'flex', gap: 16, marginBottom: 24, flexWrap: 'wrap' },
-  kpiRow: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 20 },
-  twoCol: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 20 },
 }
