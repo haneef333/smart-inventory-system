@@ -55,7 +55,7 @@ export default function Dashboard() {
       <PageHeader title="Dashboard" subtitle="Revenue, profit, and stock at a glance" />
 
       {!loading && summary && !summary.empty && (
-        <div style={styles.kpiRow}>
+        <div className="kpi-row">
           <TicketCard eyebrow="Total profit" value={money(summary.kpis.total_profit)} accent="sage" />
           <TicketCard eyebrow="Completed sales" value={summary.kpis.total_orders} accent="butter" />
           <TicketCard eyebrow="Total sales" value={money(summary.kpis.total_revenue)} accent="amber" />
@@ -67,7 +67,7 @@ export default function Dashboard() {
         <TaskCalendar />
       </div>
 
-      <div style={styles.twoCol}>
+      <div className="two-col">
         <Panel title="Recent orders">
           <RecentOrdersList rows={recentOrders} />
         </Panel>
