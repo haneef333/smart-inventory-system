@@ -1,98 +1,129 @@
-# Smart Inventory & Demand Forecasting: Full-Stack Version
+# Smart Inventory & Demand Forecasting System
 
-A full-stack rebuild of the Streamlit prototype, with a REST API backend and a React single-page frontend.
+A recipe/BOM-driven inventory management platform with real-data-backed demand forecasting, built for small food businesses (bakeries, cafés, food stalls and similar).
 
-**Live:** [Frontend (Netlify)](https://bucolic-bombolone-5646dd.netlify.app) · [API docs (Render)](https://smart-inventory-system-m0we.onrender.com/docs)
+This repo contains **two versions** of the same system:
 
-> The backend is on Render's free tier. The first request after inactivity can take around a minute to respond while the server wakes up.
+| Version | Focus | Stack | Live Demo |
+|---|---|---|---|
+| **Full-stack web app** (`/fullstack`) | Software engineering: REST API, SPA frontend, deployment | React (Vite), FastAPI, SQLite, Recharts | [Frontend (Netlify)](https://bucolic-bombolone-5646dd.netlify.app) · [API docs (Render)](https://smart-inventory-system-m0we.onrender.com/docs) |
+| **Streamlit app** (repo root) | Data science: forecasting and analytics | Python, Streamlit, Prophet, XGBoost, Plotly | [Streamlit demo](https://smart-inventory-system-ecm5houyjzh2vim7cbefyd.streamlit.app/) |
 
-- **`backend/`**: FastAPI REST API (Python), SQLite, the same data pipeline and forecasting logic as the original (XGBoost + Moving Average, Prophet optional).
-- **`frontend/`**: React (Vite) SPA that talks to the API over HTTP, with charts built in Recharts.
+> **Note:** the backend runs on Render's free tier, so the first request after inactivity can take around a minute while the server wakes up.
+
+---
+
+## Screenshots
+
+<!-- Add 3-4 screenshots to an `assets/` folder and link them here -->
+<!-- ![Dashboard](assets/dashboard.png) -->
+<!-- ![Orders](assets/orders.png) -->
+<!-- ![Forecast](assets/forecast.png) -->
+
+---
+
+## Problem Statement
+
+Small food businesses often run out of key ingredients unexpectedly, or over-order and waste stock, because there is no simple way to:
+
+1. Automatically deduct ingredient stock as orders come in, based on each product's recipe.
+2. Get warned before an ingredient actually runs out.
+3. Forecast future demand from real historical sales patterns instead of guesswork.
+
+This project addresses all three in one system, backed by a relational SQLite schema and a properly evaluated forecasting pipeline.
 
 ---
 
 ## Features
 
-- Inventory with reorder thresholds, restocking and low-stock alerts
-- Recipe (BOM) management per product
-- Order placement with automatic stock deduction and profit tracking
-- Dashboard with revenue and profit trends and top products
-- Per-product demand forecasting
-- Expense tracking by category
-- Shopping list generated from low-stock items
-- Task management
+- **Inventory management**: add, restock and delete ingredients, with configurable reorder thresholds and automatic low-stock alerts.
+- **Recipe (BOM) management**: define ingredient requirements per product and view recipes per product or as a full list.
+- **Order processing**: placing an order checks stock availability and deducts the correct ingredient quantities, logging revenue, cost and profit.
+- **Analytics dashboard**: revenue and profit trends (daily and monthly), top products, revenue distribution and a live low-stock overview.
+- **Demand forecasting**: trained on real bakery transaction data (Kaggle), comparing a moving-average baseline against XGBoost and Prophet, using a train/test split and engineered features (day of week, lag values, rolling averages, weekend flags).
+- **Expenses, shopping list and tasks** (full-stack version): track expenses by category, generate shopping lists from low-stock items, and manage to-dos.
+- **Self-seeding**: a fresh deployment builds the schema, imports the real dataset, generates demo sales and seeds starter ingredients and recipes automatically.
 
 ---
 
-## Architecture
+## Architecture (full-stack version)
 
 ```
 ┌─────────────┐      HTTP/JSON      ┌──────────────┐
 │  React SPA  │ ──────────────────► │   FastAPI    │
-│  (frontend) │ ◄────────────────── │   (backend)  │
+│  (Netlify)  │ ◄────────────────── │   (Render)   │
 └─────────────┘                     └──────┬───────┘
                                            │
                                            ▼
-                                 SQLite (data/inventory.db)
-                                 self-seeded on first run
+                                  SQLite (self-seeded)
+                                           │
+                              ┌────────────┴────────────┐
+                              ▼                         ▼
+                       Inventory / Orders        Forecast pipeline
+                       Recipes / Expenses        (XGBoost, Moving Avg,
+                                                  Prophet optional)
 ```
 
-### API overview
-
-| Area | Endpoints |
-|---|---|
-| Inventory | `GET/POST /api/inventory`, `PATCH /api/inventory/{id}/restock`, `DELETE /api/inventory/{id}` |
-| Recipes | `GET/POST /api/recipes`, `GET /api/recipes/products`, `GET /api/recipes/{product}` |
-| Orders | `GET/POST /api/orders`, `PATCH /api/orders/{id}/status` |
-| Dashboard | `GET /api/dashboard/meta`, `GET /api/dashboard/summary` |
-| Forecast | `GET /api/forecast/products`, `GET /api/forecast/{product}` |
-| Expenses | `GET/POST /api/expenses`, `GET /api/expenses/categories`, `DELETE /api/expenses/{id}` |
-| Shopping list | `GET /api/shopping-list/low-stock`, `POST /api/shopping-list/generate` |
-| Tasks | `GET/POST /api/tasks`, `PATCH/DELETE /api/tasks/{id}` |
-
-Full interactive docs are available at `/docs` (Swagger).
+The API is documented automatically with Swagger at `/docs`.
 
 ---
 
-## Run Locally
+## Model Evaluation
 
-**Backend**
+Forecast accuracy is evaluated per product on a held-out 30-day test split. Example (Bread):
 
-```bash
-cd backend
-python3 -m venv venv
-source venv/bin/activate        # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload --port 8010
-```
-
-On first run it creates the schema, imports the Kaggle bakery dataset, generates demo sales and seeds starter ingredients and recipes.
-
-**Frontend**
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Opens at `http://localhost:5173`. The dev server proxies `/api/*` to `http://localhost:8010` (see `vite.config.js`), so both must be running.
-
----
-
-## Deployment
-
-| Part | Platform | Notes |
+| Model | RMSE | SMAPE (%) |
 |---|---|---|
-| Frontend | Netlify | Built from `fullstack/frontend` |
-| Backend | Render (Web Service) | Free tier; sleeps after inactivity |
+| Moving Average | 8.08 | _update_ |
+| Prophet | 4.69 | _update_ |
+| XGBoost | 6.03 | _update_ |
 
-SQLite data on Render's free tier is not persistent across restarts, so the database re-seeds itself on startup.
+Prophet performed best on RMSE (4.69), roughly 42% lower error than the moving-average baseline. SMAPE replaced MAPE so that low-volume products do not cause divide-by-zero or inflated percentages.
 
 ---
 
 ## Tech Stack
 
-**Backend:** FastAPI, SQLite, pandas, XGBoost, scikit-learn, (optional) Prophet
+**Full-stack version:** React, Vite, React Router, Recharts, Axios, FastAPI, SQLite, pandas, scikit-learn, XGBoost, (optional) Prophet
 
-**Frontend:** React, Vite, React Router, Recharts, Axios
+**Streamlit version:** Python, Streamlit, SQLite, Prophet, XGBoost, scikit-learn, Plotly, Pandas
+
+---
+
+## Run Locally
+
+### Full-stack version
+
+See [`fullstack/README.md`](fullstack/README.md) for backend and frontend setup.
+
+### Streamlit version
+
+```bash
+git clone https://github.com/haneef333/smart-inventory-system.git
+cd smart-inventory-system
+pip install -r requirements.txt
+streamlit run app.py
+```
+
+On first run the app builds the database, imports the historical dataset and seeds starter data, so no manual setup is needed.
+
+---
+
+## Project Structure
+
+```
+smart-inventory-system/
+├── fullstack/
+│   ├── backend/      # FastAPI REST API
+│   └── frontend/     # React (Vite) SPA
+├── app.py            # Streamlit entry point
+├── ml_forecast.py    # Forecasting pipeline
+├── data/             # Runtime data
+└── BreadBasket_DMS.csv
+```
+
+---
+
+## Author
+
+**Mohammed Haneef** · [GitHub](https://github.com/haneef333)
