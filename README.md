@@ -13,14 +13,6 @@ This repo contains **two versions** of the same system:
 
 ---
 
-## Screenshots
-
-<!-- Add 3-4 screenshots to an `assets/` folder and link them here -->
-<!-- ![Dashboard](assets/dashboard.png) -->
-<!-- ![Orders](assets/orders.png) -->
-<!-- ![Forecast](assets/forecast.png) -->
-
----
 
 ## Problem Statement
 
