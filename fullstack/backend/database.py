@@ -113,9 +113,69 @@ def init_schema():
     )
     """)
 
+    # --- Orders placed by customers on the storefront (MERN app) ---
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS online_orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        external_id TEXT NOT NULL UNIQUE,
+        customer_name TEXT,
+        customer_phone TEXT,
+        customer_email TEXT,
+        fulfilment TEXT DEFAULT 'pickup',
+        address TEXT,
+        due_date TEXT,
+        time_slot TEXT,
+        payment_method TEXT DEFAULT 'cash',
+        payment_status TEXT DEFAULT 'unpaid',
+        notes TEXT,
+        delivery_fee REAL DEFAULT 0,
+        coupon_code TEXT,
+        discount REAL DEFAULT 0,
+        total REAL DEFAULT 0,
+        status TEXT DEFAULT 'new',
+        status_note TEXT,
+        received_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        decided_at TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        callback_state TEXT DEFAULT 'none',
+        callback_attempts INTEGER DEFAULT 0,
+        callback_error TEXT,
+        callback_at TIMESTAMP
+    )
+    """)
+
+    cursor.execute("""
+    CREATE TABLE IF NOT EXISTS online_order_items (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        online_order_id INTEGER NOT NULL REFERENCES online_orders(id) ON DELETE CASCADE,
+        product_name TEXT NOT NULL,
+        display_name TEXT,
+        quantity INTEGER NOT NULL,
+        unit_price REAL NOT NULL,
+        recipe_scale REAL DEFAULT 1,
+        details TEXT,
+        photo_url TEXT
+    )
+    """)
+
     conn.commit()
     _migrate_orders_columns(cursor, conn)
+    # Databases created before cake options, coupons and time slots get the new columns
+    _add_missing_columns(cursor, conn, "online_orders", {
+        "time_slot": "TEXT", "coupon_code": "TEXT", "discount": "REAL DEFAULT 0",
+    })
+    _add_missing_columns(cursor, conn, "online_order_items", {
+        "recipe_scale": "REAL DEFAULT 1", "details": "TEXT", "photo_url": "TEXT",
+    })
     conn.close()
+
+
+def _add_missing_columns(cursor, conn, table, columns):
+    existing = {row[1] for row in cursor.execute(f"PRAGMA table_info({table})").fetchall()}
+    for name, col_type in columns.items():
+        if name not in existing:
+            cursor.execute(f"ALTER TABLE {table} ADD COLUMN {name} {col_type}")
+    conn.commit()
 
 
 def _migrate_orders_columns(cursor, conn):
@@ -129,6 +189,8 @@ def _migrate_orders_columns(cursor, conn):
         "delivery_status": "TEXT DEFAULT 'pending'",
         "payment_status": "TEXT DEFAULT 'unpaid'",
         "payment_method": "TEXT DEFAULT 'cash'",
+        # Links an order row back to the storefront order it came from (NULL for walk-in orders)
+        "online_order_id": "INTEGER",
     }
 
     for col_name, col_def in new_cols.items():

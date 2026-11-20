@@ -4,6 +4,45 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || '/api',
 })
 
+// ---- Owner login ----
+// The token is kept in this browser. Every request sends it; if the backend
+// says "please log in" (401), the app shows the login screen again.
+const TOKEN_KEY = 'owner_token'
+export const ownerToken = {
+  get() { try { return localStorage.getItem(TOKEN_KEY) } catch { return null } },
+  set(t) { try { t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY) } catch { /* ignore */ } },
+}
+
+api.interceptors.request.use(config => {
+  const token = ownerToken.get()
+  if (token) config.headers.Authorization = `Bearer ${token}`
+  return config
+})
+
+api.interceptors.response.use(
+  res => res,
+  err => {
+    if (err?.response?.status === 401 && !err.config?.url?.startsWith('/auth/')) {
+      ownerToken.set(null)
+      window.dispatchEvent(new Event('owner:logged-out'))
+    }
+    return Promise.reject(err)
+  },
+)
+
+export const getAuthStatus = () => api.get('/auth/status').then(r => r.data)
+export const ownerLogin = (password) => api.post('/auth/login', { password }).then(r => r.data)
+
+// WebSocket address for live order alerts, e.g. ws://127.0.0.1:8000/api/online-orders/ws
+export function onlineOrdersSocketUrl() {
+  const base = import.meta.env.VITE_API_URL || `${window.location.origin}/api`
+  const url = new URL(`${base.replace(/\/$/, '')}/online-orders/ws`, window.location.origin)
+  url.protocol = url.protocol === 'https:' ? 'wss:' : 'ws:'
+  const token = ownerToken.get()
+  if (token) url.searchParams.set('token', token)
+  return url.toString()
+}
+
 export default api
 
 export const getInventory = () => api.get('/inventory').then(r => r.data)
@@ -57,3 +96,10 @@ export const addPortfolioItem = (title, file) => {
 }
 export const deletePortfolioItem = (id) => api.delete(`/portfolio/${id}`).then(r => r.data)
 export const portfolioImageUrl = (filename) => `${api.defaults.baseURL.replace(/\/api$/, '')}/uploads/portfolio/${filename}`
+
+// --- Online orders from the customer storefront
+export const getOnlineOrders = (status = 'all') => api.get('/online-orders', { params: { status } }).then(r => r.data)
+export const getOnlineOrderSummary = () => api.get('/online-orders/summary').then(r => r.data)
+export const acceptOnlineOrder = (id) => api.post(`/online-orders/${id}/accept`).then(r => r.data)
+export const declineOnlineOrder = (id, reason) => api.post(`/online-orders/${id}/decline`, { reason }).then(r => r.data)
+export const updateOnlineOrder = (id, update) => api.patch(`/online-orders/${id}/status`, update).then(r => r.data)

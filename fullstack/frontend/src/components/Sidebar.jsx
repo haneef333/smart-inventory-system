@@ -1,17 +1,20 @@
 import { NavLink } from 'react-router-dom'
+import { useOnlineOrderSummary } from '../hooks/useOnlineOrderSummary'
 
 const NAV_ITEMS = [
   { to: '/', label: 'Dashboard', icon: '◈' },
   { to: '/inventory', label: 'Inventory', icon: '▤' },
   { to: '/recipes', label: 'Recipes', icon: '✎' },
   { to: '/orders', label: 'Orders', icon: '⌗' },
+  { to: '/online-orders', label: 'Online orders', icon: '🛍', badgeKey: 'new' },
   { to: '/shopping-list', label: 'Shopping list', icon: '🛒' },
   { to: '/expenses', label: 'Expenses', icon: '₹' },
   { to: '/portfolio', label: 'Portfolio', icon: '📷' },
   { to: '/forecast', label: 'Forecast', icon: '↗' },
 ]
 
-export default function Sidebar() {
+export default function Sidebar({ onLogout }) {
+  const summary = useOnlineOrderSummary()
   return (
     <aside style={styles.sidebar}>
       <div style={styles.brand}>
@@ -35,9 +38,15 @@ export default function Sidebar() {
           >
             <span style={styles.navIcon}>{item.icon}</span>
             {item.label}
+            {item.badgeKey && summary[item.badgeKey] > 0 && (
+              <span style={styles.navBadge}>{summary[item.badgeKey]}</span>
+            )}
           </NavLink>
         ))}
       </nav>
+      {onLogout && (
+        <button type="button" onClick={onLogout} style={styles.logout}>Log out</button>
+      )}
 
       <div style={styles.footer}>
         <div className="eyebrow">status</div>
@@ -110,6 +119,31 @@ const styles = {
   navLinkActive: {
     background: 'var(--panel)',
     color: 'var(--butter)',
+  },
+  logout: {
+    marginTop: 16,
+    padding: '10px 12px',
+    borderRadius: 10,
+    border: '1px solid var(--panel-border)',
+    background: 'transparent',
+    color: 'var(--flour-dim)',
+    cursor: 'pointer',
+    textAlign: 'left',
+    fontSize: 14,
+  },
+  navBadge: {
+    marginLeft: 'auto',
+    minWidth: 20,
+    height: 20,
+    padding: '0 6px',
+    borderRadius: 999,
+    background: 'var(--butter)',
+    color: 'var(--charcoal)',
+    fontSize: 11,
+    fontWeight: 700,
+    display: 'inline-flex',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   navIcon: {
     width: 18,
